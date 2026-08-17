@@ -1,0 +1,33 @@
+name: Design proposal
+description: Propose a requirements, architecture, documentation, or governance change.
+title: '[Design]: '
+labels:
+  - design
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proposals should distinguish confirmed facts, options, trade-offs, and open questions.
+  - type: input
+    id: problem
+    attributes:
+      label: Problem statement
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the proposed change without presenting it as decided.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and trade-offs
+    validations:
+      required: true
+  - type: textarea
+    id: questions
+    attributes:
+      label: Open questions

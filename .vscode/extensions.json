@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "DavidAnson.vscode-markdownlint",
+    "bierner.markdown-mermaid",
+    "editorconfig.editorconfig",
+    "github.copilot",
+    "github.copilot-chat",
+    "github.vscode-github-actions",
+    "redhat.vscode-yaml"
+  ]
+}

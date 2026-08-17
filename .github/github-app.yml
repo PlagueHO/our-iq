@@ -1,0 +1,15 @@
+instructions:
+  - path: AGENTS.md
+  - path: .github/copilot-instructions.md
+scripts:
+  - name: 'docs: dev'
+    command: pnpm docs:dev
+  - name: 'docs: build'
+    command: pnpm docs:build
+  - name: 'docs: lint'
+    command: pnpm lint:md
+  - name: 'docs: validate'
+    command: pnpm validate
+automation:
+  auto_issue_session: true
+  remote_control: true
