@@ -1,0 +1,17 @@
+{
+  "config": {
+    "extends": ".markdownlint.json"
+  },
+  "globs": [
+    "**/*.md",
+    "!**/node_modules/**",
+    "!**/.vitepress/**",
+    "!**/dist/**"
+  ],
+  "ignores": [
+    "**/node_modules/**",
+    "**/.vitepress/**",
+    "**/dist/**"
+  ],
+  "fix": false
+}

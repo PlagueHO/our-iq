@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docs: install",
+      "type": "shell",
+      "command": "pnpm install",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "docs: dev",
+      "type": "shell",
+      "command": "pnpm docs:dev",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "docs: build",
+      "type": "shell",
+      "command": "pnpm docs:build",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "markdown: lint",
+      "type": "shell",
+      "command": "pnpm lint:md",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "validate",
+      "type": "shell",
+      "command": "pnpm validate",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}
