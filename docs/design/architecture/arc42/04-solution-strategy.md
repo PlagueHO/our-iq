@@ -122,7 +122,7 @@ with the reason for deferral.
 
 - What is the smallest end-to-end slice that would validate the structure-first
   bet: ontology creation, one contribution, and one scoped retrieval?
-- Which strategy is most at risk if assumption A-07, knowledge-space-level
-  authorization, proves insufficient?
+- Which strategy is most affected if the confirmed knowledge-space-level
+  authorization model changes in a future version?
 - Should the deterministic path reuse the change-set ledger, or is it a distinct
   audited operation?

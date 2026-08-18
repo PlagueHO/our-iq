@@ -46,6 +46,8 @@ Record in the structural architecture slice.
 | C-12 | Retrieval returns structured grounded evidence with citations by default. Synthesis into a narrative answer is opt-in. |
 | C-13 | The initial version is single-tenant and hosts multiple knowledge spaces. |
 | C-14 | The architecture vocabulary is Client Agent, Our IQ MCP Server, Our IQ Domain Agents, Our IQ Tool Services, Our IQ Data Services. |
+| C-15 | Authorization is managed at knowledge-space level, not per document, for the initial version. |
+| C-16 | Retrieval may read a projection that lags a canonical commit; eventual read-after-write consistency is acceptable. |
 
 ## Assumptions
 
@@ -57,13 +59,8 @@ Record in the structural architecture slice.
 | A-04 | A knowledge space is small enough that an ontology migration can complete within an acceptable maintenance window. | Migration must become incremental and online, which is a materially harder design. |
 | A-05 | Contributors accept that an agent decides where their contribution is placed. | The deterministic path becomes the primary contribution route rather than an exception. |
 | A-06 | Calling agents prefer structured evidence over a narrative answer. | The default response shape must be reconsidered. |
-| A-07 | Access control at knowledge-space granularity is sufficient for the initial version. | Item-level or hierarchy-level authorization is required, affecting retrieval, projection, and filtering throughout. |
 | A-08 | A knowledge space is usable once contributions accumulate through normal use. | Bulk import must be pulled into the initial version. |
-| A-09 | Retrieval reading a projection that lags a commit by a short interval is acceptable. | Read-after-write consistency must be guaranteed, constraining the projection design. |
 | A-10 | One instance serves one organization, so cross-tenant isolation is not required. | Multi-tenancy must be designed in rather than added later. |
-
-A-07 and A-09 are the assumptions most likely to be wrong and most expensive to
-reverse. Both should be validated before the execution model is finalized.
 
 ## Open questions
 
