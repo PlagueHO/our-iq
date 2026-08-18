@@ -9,3 +9,4 @@ made.
 - [Vision and scope](vision-and-scope)
 - [Functional requirements](functional-requirements)
 - [Non-functional requirements](non-functional-requirements)
+- [Assumptions, open questions, and deferred items](assumptions-and-open-questions)
