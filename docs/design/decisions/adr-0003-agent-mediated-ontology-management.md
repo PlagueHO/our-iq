@@ -46,8 +46,10 @@ low-level ontology create, update, or delete operations.
 
 ## Implementation notes
 
-- IMP-001: Ontology semantics, version pinning, and lifecycle transitions remain
-  open; see Q-02, Q-03, and Q-06.
+- IMP-001: Invocation pinning is defined by
+  [ADR-0016](adr-0016-immutable-execution-context-snapshots), and the
+  flexible rule model is defined in the logical knowledge model. Lifecycle
+  transitions remain open; see Q-03.
 
 ## References
 

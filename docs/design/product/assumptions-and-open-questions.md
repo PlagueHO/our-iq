@@ -52,7 +52,11 @@ Record in the structural architecture slice.
 | C-18 | Access control uses a small fixed role set per knowledge space: Owner, Ontology Manager, Contributor, Reader. |
 | C-19 | The initial version targets Model Context Protocol specification `2026-07-28`, accepting the compatibility risk of a very new spec. |
 | C-20 | The initial version targets best-effort availability with no formal recovery point or recovery time objective. Revisit before a wider rollout. |
-| C-21 | Azure Blob Storage (canonical knowledge), Azure Table Storage or Cosmos DB (control metadata), and Azure AI Search (retrieval projection) are the confirmed working direction for the canonical storage topology. The structural architecture slice still drafts the Architecture Decision Record with alternatives considered, per `AGENTS.md`. |
+| C-21 | Cosmos DB holds control metadata. Azure Blob Storage for canonical knowledge and Azure AI Search for retrieval remain Candidate directions, not deployed implementation claims. |
+| C-22 | A per-space Cosmos DB transactional publication record is the visibility fence that makes staged immutable revisions canonical as one change set. |
+| C-23 | Every invocation uses an immutable execution-context snapshot that pins its governing state; stale mutations are rejected. |
+| C-24 | Unattended execution requires an immutable, bounded execution grant linked to an attended approval or space policy. |
+| C-25 | Ontology rules use Required, Recommended, and Informational levels so structural validation can coexist with flexible knowledge guidance. |
 
 ## Assumptions
 
@@ -73,12 +77,8 @@ Record in the structural architecture slice.
 
 | ID | Question |
 | --- | --- |
-| Q-01 | By what mechanism does a change set commit atomically across multiple documents and control metadata? |
-| Q-02 | How does a shared agent obtain the correct, current ontology on each invocation, and is the ontology version pinned for the duration of a change set? |
 | Q-03 | What are the legal knowledge-space lifecycle states and transitions, and what is readable or writable in each? |
 | Q-04 | Within the confirmed role set (Owner, Ontology Manager, Contributor, Reader), what exact capabilities does each role grant, and how is group assignment and delegation handled? |
-| Q-05 | How does an unattended maintenance job prove the attended request or policy that authorized it, and for how long does that authority remain valid? |
-| Q-06 | What are the ontology's formal semantics: identity, referential integrity, cardinality, inheritance, and extensibility? |
 | Q-07 | How is knowledge content prevented from influencing the instructions or permitted tool set of any agent that processes it? |
 
 ### Blocking the API contract slice
@@ -99,7 +99,7 @@ Record in the structural architecture slice.
 | Q-21 | What data classification, residency, and retention constraints apply? |
 | Q-22 | What is the acceptable cost envelope per instance and per knowledge space? |
 | Q-23 | Which model deployments back each agent, and who governs prompt and model changes? |
-| Q-24 | Which specific Azure services finalize control metadata (Table Storage or Cosmos DB) and messaging or orchestration for long-running ontology and change-set jobs? |
+| Q-24 | Which service coordinates messaging or orchestration for long-running ontology and change-set jobs? |
 | Q-25 | What is the maximum size of a single canonical knowledge item? |
 
 ### Product direction

@@ -74,5 +74,5 @@ flowchart LR
   (Q-07)?
 - What storage and retention controls apply to audit and observability data
   (Q-21)?
-- How is unattended authority represented and validated across boundaries
-  (Q-05)?
+- How are grant issuance, revocation, and execution limits represented in the
+  eventual management contract?

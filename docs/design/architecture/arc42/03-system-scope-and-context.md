@@ -54,8 +54,9 @@ storage directly.
 | Azure platform services | Required | Canonical storage, control metadata, retrieval projection, messaging, and observability |
 | Client Agent host | External | Speaks Model Context Protocol to the Our IQ MCP Server |
 
-The specific Azure services are not selected. They are evaluated and recorded as
-Architecture Decision Records in a later slice.
+Cosmos DB is selected for control metadata and per-space transactional
+publication. The specific services for canonical storage, retrieval projection,
+long-running work, and observability remain open or Candidate directions.
 
 ## Context diagram
 

@@ -28,9 +28,9 @@ primary hierarchy and typed relationships. Search and graph stores are
 rebuildable projections, never sources of truth.
 
 The accepted topology direction uses Azure Blob Storage for canonical knowledge,
-Azure AI Search for retrieval projection, and a storage abstraction for control
-metadata. Cosmos DB is the preferred initial candidate behind that abstraction;
-Azure Table Storage remains an alternative pending Q-24.
+Azure AI Search for retrieval projection, and Cosmos DB for control metadata.
+Blob Storage and Azure AI Search remain Candidate services; Cosmos DB is
+selected for the per-space control-record transaction boundary.
 
 ## Alternatives considered
 
@@ -54,8 +54,9 @@ Azure Table Storage remains an alternative pending Q-24.
 
 ## Implementation notes
 
-- IMP-001: Azure Blob Storage, Cosmos DB, Azure Table Storage, and Azure AI
-  Search are `Candidate` services, not deployed implementation claims.
+- IMP-001: Azure Blob Storage and Azure AI Search are `Candidate` services;
+  Cosmos DB is selected only for control metadata. No deployed implementation
+  is implied.
 - IMP-002: Projection lag is acceptable for the initial version; see C-16.
 
 ## References

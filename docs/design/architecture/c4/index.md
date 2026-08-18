@@ -11,5 +11,9 @@ behaviour.
 - [Container](container)
 - [Trust boundaries and data flow](trust-boundaries)
 - [Candidate Azure deployment](azure-deployment)
-- [Component](component) - placeholder; component boundaries are out of scope
-  for this slice.
+- [Component](component) - proposed public orchestration, change-set,
+  retrieval, and ontology-lifecycle responsibilities.
+- [Agentic execution model](../agentic-execution-model) - detailed runtime,
+  identity, authorization, and state diagrams.
+- [Logical knowledge model](../logical-knowledge-model) - canonical knowledge,
+  ontology-rule, and projection-flow diagrams.

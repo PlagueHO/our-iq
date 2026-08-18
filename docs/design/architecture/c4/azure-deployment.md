@@ -8,8 +8,8 @@ status: Proposed
 ## Purpose
 
 Map the accepted Azure hosting constraint to candidate compute, data, and
-network boundaries. This view is `Proposed`; no Azure environment is deployed
-or selected by this documentation.
+network boundaries. This view is `Proposed`; no Azure environment is deployed.
+Cosmos DB is selected only as the control-metadata service.
 
 ```mermaid
 flowchart LR
@@ -29,8 +29,7 @@ flowchart LR
     end
 
     blob[(Candidate Azure Blob Storage<br/>Canonical Markdown)]
-    cosmos[(Preferred Candidate Cosmos DB<br/>Control metadata abstraction)]
-    table[(Alternative Candidate Azure Table Storage<br/>Control metadata abstraction)]
+    cosmos[(Selected Cosmos DB<br/>Control metadata)]
     search((Candidate Azure AI Search<br/>Derived retrieval projection))
     telemetry[Observability service<br/>Open]
   end
@@ -42,7 +41,6 @@ flowchart LR
   tools --> pe
   pe --> blob
   pe --> cosmos
-  pe --> table
   blob -. rebuild .-> search
   mcp -. telemetry .-> telemetry
   tools -. telemetry .-> telemetry
@@ -58,8 +56,7 @@ flowchart LR
 | Azure Container Apps | Candidate | Candidate compute for API, MCP Server, Tool Service, and management workloads. |
 | Virtual network and private endpoints | Candidate | Candidate private connectivity boundary for supported data services. |
 | Azure Blob Storage | Candidate | Candidate canonical-knowledge store under [ADR-0009](../../decisions/adr-0009-canonical-markdown-and-rebuildable-projections). |
-| Cosmos DB | Preferred Candidate | Preferred initial control-metadata backing store behind a storage abstraction. |
-| Azure Table Storage | Alternative Candidate | Alternative control-metadata backing store pending Q-24. |
+| Cosmos DB | Selected | Per-space transactional control metadata and change-set coordination. |
 | Azure AI Search | Candidate | Candidate derived retrieval projection. |
 | Observability service | Open | Service selection and retention are not decided. |
 
@@ -71,8 +68,7 @@ scaling rule, or service-specific private-endpoint configuration.
 
 ## Open questions
 
-- Which Azure services finalize control metadata and long-running-work
-  orchestration (Q-24)?
+- Which Azure service coordinates long-running work (Q-24)?
 - Which regional, residency, classification, retention, and isolation
   constraints apply (Q-21)?
 - Which observability service and audit-retention approach satisfy the

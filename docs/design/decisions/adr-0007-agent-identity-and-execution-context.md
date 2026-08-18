@@ -49,7 +49,8 @@ explicit space policy and carries the agent identity alone.
 
 ## Implementation notes
 
-- IMP-001: Unattended authorization evidence remains open; see Q-05.
+- IMP-001: Unattended authorization evidence is defined by
+  [ADR-0017](adr-0017-bounded-unattended-execution-grants).
 
 ## References
 
