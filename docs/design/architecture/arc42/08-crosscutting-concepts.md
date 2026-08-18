@@ -26,6 +26,13 @@ its exact capabilities remain open. See
 [ADR-0007](../../decisions/adr-0007-agent-identity-and-execution-context) and
 [ADR-0008](../../decisions/adr-0008-service-managed-identities).
 
+An immutable execution-context snapshot pins the agent definition, ontology,
+policy, canonical head, and identities for every invocation. Tool Services
+reject stale state-sensitive work. Unattended execution also requires a
+bounded, auditable execution grant linked to an attended approval or space
+policy. See [ADR-0016](../../decisions/adr-0016-immutable-execution-context-snapshots)
+and [ADR-0017](../../decisions/adr-0017-bounded-unattended-execution-grants).
+
 ## Canonical knowledge, provenance, and projections
 
 Canonical knowledge is Markdown with structured front matter. Every canonical
@@ -33,6 +40,11 @@ write passes through Our IQ and an approved mutation commits as one versioned
 change set. Canonical state carries provenance including the initiating user,
 acting agent, source material, ontology version, approval evidence, and
 resulting version.
+
+Immutable staged revisions become canonical only when a per-space transactional
+publication writes the committed manifest and active pointer. The pointer is
+the visibility fence, so readers never observe a partial change set. See
+[ADR-0015](../../decisions/adr-0015-transactional-change-set-visibility-fence).
 
 Search and graph stores are rebuildable projections. They may support
 retrieval, but never decide what canonical knowledge contains. See
@@ -46,6 +58,11 @@ Every operation identifies a knowledge space. The space supplies the active
 ontology and mutation policy. Mutation policy selects automatic commitment,
 contributor confirmation, or review. Privileged deterministic correction is a
 separate, governed management path.
+
+Ontology rules distinguish Required validation from Recommended guidance and
+Informational agent guidance. This retains structural integrity without
+misrepresenting evolving shared knowledge as relational data. See the
+[logical knowledge model](../logical-knowledge-model).
 
 See [ADR-0003](../../decisions/adr-0003-agent-mediated-ontology-management),
 [ADR-0004](../../decisions/adr-0004-per-space-mutation-policy), and
@@ -73,7 +90,7 @@ remain open.
   (Q-07)?
 - What exact capabilities and delegation rules apply to each knowledge-space
   role (Q-04)?
-- What evidence authorizes unattended work, and how long does it remain valid
-  (Q-05)?
+- How do grant issuance, revocation, and limit accounting appear in the eventual
+  management contract?
 - What error taxonomy, evidence schema, and public compatibility policy apply
   (Q-11 to Q-13)?

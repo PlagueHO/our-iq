@@ -47,8 +47,9 @@ and versioning controls.
 
 ## Implementation notes
 
-- IMP-001: The storage implementation and commit protocol remain open; see Q-01
-  and Q-24.
+- IMP-001: The change-set publication protocol is defined by
+  [ADR-0015](adr-0015-transactional-change-set-visibility-fence). Job
+  orchestration remains open; see Q-24.
 
 ## References
 

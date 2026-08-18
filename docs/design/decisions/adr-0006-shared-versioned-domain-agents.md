@@ -48,8 +48,8 @@ deployment.
 
 ## Implementation notes
 
-- IMP-001: The mechanism for obtaining and pinning active ontology state remains
-  open; see Q-02.
+- IMP-001: The invocation snapshot mechanism for active ontology state is
+  defined by [ADR-0016](adr-0016-immutable-execution-context-snapshots).
 
 ## References
 

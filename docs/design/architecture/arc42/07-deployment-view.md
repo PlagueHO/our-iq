@@ -29,8 +29,7 @@ constraints. All other named platform services in this section are
 | Azure virtual network | Candidate private application and data network boundary. | Candidate |
 | Private endpoints | Candidate private connectivity from application compute to supported Azure Data Services. | Candidate |
 | Azure Blob Storage | Candidate canonical Markdown store. | Candidate |
-| Cosmos DB | Preferred initial Candidate backing store for control metadata behind a storage abstraction. | Candidate |
-| Azure Table Storage | Alternative Candidate backing store for control metadata. | Candidate |
+| Cosmos DB | Per-space transactional control metadata and change-set coordination. | Selected |
 | Azure AI Search | Candidate retrieval projection. | Candidate |
 | Observability service | Collects logs, metrics, traces, and audit evidence. | Open |
 
@@ -61,8 +60,7 @@ deliberately does not propose them.
 
 ## Open questions
 
-- Which Azure services finalize control metadata and long-running-work
-  orchestration (Q-24)?
+- Which Azure service coordinates long-running-work orchestration (Q-24)?
 - Which data residency, classification, retention, and network-isolation
   constraints apply (Q-21)?
 - Which observability services and audit retention controls satisfy the

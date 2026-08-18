@@ -23,6 +23,10 @@ authoritative; this register is navigational.
 | ADR-0011 | [Architecture vocabulary](adr-0011-architecture-vocabulary) | Accepted | 2026-08-18 |
 | ADR-0012 | [Governed deterministic correction](adr-0012-governed-deterministic-correction) | Accepted | 2026-08-18 |
 | ADR-0013 | [Grounded evidence by default](adr-0013-grounded-evidence-default) | Accepted | 2026-08-18 |
+| ADR-0014 | [Cosmos DB control metadata](adr-0014-cosmos-db-control-metadata) | Accepted | 2026-08-18 |
+| ADR-0015 | [Transactional change-set visibility fence](adr-0015-transactional-change-set-visibility-fence) | Accepted | 2026-08-18 |
+| ADR-0016 | [Immutable execution-context snapshots](adr-0016-immutable-execution-context-snapshots) | Accepted | 2026-08-18 |
+| ADR-0017 | [Bounded unattended execution grants](adr-0017-bounded-unattended-execution-grants) | Accepted | 2026-08-18 |
 
 ## Template
 

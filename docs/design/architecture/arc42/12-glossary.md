@@ -50,6 +50,12 @@ develops.
 | Canonical store | The authoritative store of knowledge items. Never a projection. | Confirmed |
 | Change-set ledger | The immutable record of change plans, approvals, provenance, and committed versions. | Proposed |
 | Control metadata | Knowledge-space identity, lifecycle state, membership, policy, and job records. | Proposed |
+| Visibility fence | The committed active pointer and manifest that make one complete change set visible to canonical readers. | Confirmed |
+| Execution context | An immutable snapshot that pins a space's state, governing versions, identities, and trace information for one invocation. | Confirmed |
+| Execution grant | Immutable, bounded authorization evidence for unattended work. | Confirmed |
+| Required rule | An ontology rule whose violation blocks a change set. | Confirmed |
+| Recommended rule | An ontology rule surfaced for review that may proceed only with recorded rationale. | Confirmed |
+| Informational rule | Ontology guidance that influences planning or review but never blocks commitment. | Confirmed |
 
 ## Identity and execution
 

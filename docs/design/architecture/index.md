@@ -8,3 +8,5 @@ requirements and decisions are approved.
 
 - [arc42 architecture template](arc42/)
 - [C4 views](c4/)
+- [Agentic execution model](agentic-execution-model)
+- [Logical knowledge model](logical-knowledge-model)

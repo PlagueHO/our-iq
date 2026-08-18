@@ -30,12 +30,13 @@ alternatives, and consequences.
 | Vocabulary | [ADR-0011](../../decisions/adr-0011-architecture-vocabulary) | Architecture roles use stable names. |
 | Deterministic correction | [ADR-0012](../../decisions/adr-0012-governed-deterministic-correction) | Privileged correction remains governed and separate from ordinary contribution. |
 | Retrieval default | [ADR-0013](../../decisions/adr-0013-grounded-evidence-default) | Cited structured evidence is the default query response. |
+| Control metadata | [ADR-0014](../../decisions/adr-0014-cosmos-db-control-metadata) | Cosmos DB supplies the per-space control-record transaction boundary. |
+| Change-set visibility | [ADR-0015](../../decisions/adr-0015-transactional-change-set-visibility-fence) | Staged revisions become canonical through one committed manifest and pointer. |
+| Invocation context | [ADR-0016](../../decisions/adr-0016-immutable-execution-context-snapshots) | Agent work pins state and rejects stale mutations. |
+| Unattended authority | [ADR-0017](../../decisions/adr-0017-bounded-unattended-execution-grants) | Private tools validate immutable, bounded authorization grants. |
 
 ## Open questions
 
-- How does the selected storage topology provide an atomic change-set commit
-  protocol (Q-01)?
-- Which candidate Azure services are selected for control metadata and
-  long-running-work orchestration (Q-24)?
+- Which service coordinates long-running work (Q-24)?
 - What model, prompt, and evaluation governance applies to the required agent
   runtime (Q-23)?

@@ -47,8 +47,8 @@ Partial canonical commits are not permitted or observable.
 
 ## Implementation notes
 
-- IMP-001: The atomic commit mechanism is open and must be resolved before
-  implementation; see Q-01.
+- IMP-001: The atomic publication mechanism is defined by
+  [ADR-0015](adr-0015-transactional-change-set-visibility-fence).
 
 ## References
 

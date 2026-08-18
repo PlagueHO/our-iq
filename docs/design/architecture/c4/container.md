@@ -12,7 +12,8 @@ boundary after they are decided.
 
 This view is `Proposed`. The named Azure services are status-labelled
 candidates, except for required Microsoft Foundry Agent Service and Microsoft
-Entra constraints. It does not describe a deployment.
+Entra constraints and selected Cosmos DB control metadata. It does not
+describe a deployment.
 
 ```mermaid
 flowchart LR
@@ -35,7 +36,7 @@ flowchart LR
 
   subgraph data[Private data boundary]
     canonical[(Canonical knowledge<br/>Markdown and front matter<br/>Candidate Azure Blob Storage)]
-    control[(Control metadata<br/>Preferred Candidate Cosmos DB<br/>Alternative Candidate Table Storage)]
+    control[(Control metadata<br/>Selected Cosmos DB)]
     projection((Derived retrieval projection<br/>Candidate Azure AI Search))
     graph((Derived graph projection<br/>Candidate service open))
   end
@@ -64,7 +65,7 @@ flows. A projection may lag a canonical commit and is never authoritative.
 | Our IQ Tool Services | Deterministic private domain operations and data coordination. | Azure Container Apps | Candidate compute |
 | Management APIs and maintenance commands | Privileged operator and steward capability. | Azure Container Apps | Candidate compute |
 | Canonical knowledge store | Stores authoritative Markdown and front matter. | Azure Blob Storage | Candidate |
-| Control metadata store | Stores governance and change-set coordination metadata behind an abstraction. | Cosmos DB preferred; Table Storage alternative | Candidate |
+| Control metadata store | Stores governance and per-space change-set coordination metadata. | Cosmos DB | Selected |
 | Retrieval projection | Supports hybrid retrieval from rebuildable derived data. | Azure AI Search | Candidate |
 | Graph projection | Supports relationship traversal if justified. | Open | Candidate service undecided |
 
@@ -72,7 +73,6 @@ flows. A projection may lag a canonical commit and is never authoritative.
 
 - Which Tool Services become separate deployable units and what private contracts
   do they expose?
-- How does the control-metadata abstraction support atomic change sets (Q-01)?
 - Is a dedicated graph projection justified, and if so, which service supports
   it (D-08 and Q-24)?
 - Which candidate services require private endpoints and which network
