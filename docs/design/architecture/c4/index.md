@@ -2,10 +2,14 @@
 
 **Status:** Proposed
 
-The [C4 model](https://c4model.com/) will describe architecture at multiple
-levels. The views below are templates and must be updated from approved
-architecture evidence.
+The [C4 model](https://c4model.com/) describes architecture at multiple levels.
+The structural views below derive from accepted ADRs while clearly separating
+required constraints, Candidate services, open decisions, and deployed
+behaviour.
 
 - [System context](system-context)
 - [Container](container)
-- [Component](component)
+- [Trust boundaries and data flow](trust-boundaries)
+- [Candidate Azure deployment](azure-deployment)
+- [Component](component) - placeholder; component boundaries are out of scope
+  for this slice.
