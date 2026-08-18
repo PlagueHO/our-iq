@@ -67,12 +67,19 @@ These may become mandatory once the corresponding question is answered.
 
 | Candidate constraint | Blocking question | Status |
 | --- | --- | --- |
-| Data residency within a declared geography | Q-22 | Open |
-| Data classification limits per knowledge space | Q-22 | Open |
-| Audit retention period | Q-22 | Open |
-| Supported Model Context Protocol specification range | Q-13 | Open |
-| Network isolation requirements between components | Q-22 | Open |
-| Cost envelope per instance | Q-23 | Open |
+| Data residency within a declared geography | Q-21 | Open |
+| Data classification limits per knowledge space | Q-21 | Open |
+| Audit retention period | Q-21 | Open |
+| Network isolation requirements between components | Q-24 | Open |
+| Cost envelope per instance | Q-22 | Open |
+
+`CON-09` is amended: the initial version targets pilot scale (one team, under
+20 users, under 5,000 knowledge items per space; see `C-17`). Revisit before a
+wider rollout.
+
+The initial version targets Model Context Protocol specification `2026-07-28`
+(`C-19`); the compatibility and deprecation policy as later versions release
+remains open (`Q-13`).
 
 Question identifiers refer to the
 [assumptions and open questions register](../../product/assumptions-and-open-questions).

@@ -67,23 +67,25 @@ design slice.
 | NFR-0030 | Retrieval latency | Time from question to returned evidence. | TBD | Proposed |
 | NFR-0031 | Contribution latency | Time from contribution to a returned change plan or commit confirmation. | TBD | Proposed |
 | NFR-0032 | Read-after-write visibility | Time before a committed change is reflected in retrieval results. | TBD | Proposed |
-| NFR-0033 | Concurrent users | Users concurrently interacting with one instance. | TBD | Proposed |
-| NFR-0034 | Knowledge spaces per instance | Spaces one instance can host without degradation. | TBD | Proposed |
-| NFR-0035 | Knowledge items per space | Items one space can hold while meeting retrieval latency targets. | TBD | Proposed |
+| NFR-0033 | Concurrent users | Users concurrently interacting with one instance. | Under 20 (pilot scale; C-17) | Proposed |
+| NFR-0034 | Knowledge spaces per instance | Spaces one instance can host without degradation. | Low single digits (pilot: one team) | Proposed |
+| NFR-0035 | Knowledge items per space | Items one space can hold while meeting retrieval latency targets. | Under 5,000 (pilot scale; C-17) | Proposed |
 | NFR-0036 | Knowledge item size | Maximum size of a single canonical knowledge item. | TBD | Proposed |
 | NFR-0037 | Migration duration | Time to migrate a space to a new ontology version, and the maximum acceptable write outage. | TBD | Proposed |
 
-Targets cannot be set until expected scale is known. This is the single largest
-gap in the quality baseline and it also gates several architecture decisions.
+Pilot-scale targets are set (NFR-0033 to NFR-0035; see C-17 in the
+[assumptions and open questions register](assumptions-and-open-questions)).
+Retrieval latency, contribution latency, item size, and migration duration
+still depend on architecture decisions made in later slices.
 
 ## Availability and recoverability
 
 | ID | Quality attribute | Requirement | Target | Status |
 | --- | --- | --- | --- | --- |
-| NFR-0040 | Availability | Availability of retrieval for a space in the `ready` state. | TBD | Proposed |
+| NFR-0040 | Availability | Availability of retrieval for a space in the `ready` state. | Best-effort; no formal target for pilot (C-20) | Proposed |
 | NFR-0041 | Degraded operation | Canonical knowledge remains readable when a derived projection is unavailable. | Required | Proposed |
-| NFR-0042 | Recovery point objective | Maximum acceptable loss of committed knowledge. | TBD | Proposed |
-| NFR-0043 | Recovery time objective | Maximum acceptable time to restore service after failure. | TBD | Proposed |
+| NFR-0042 | Recovery point objective | Maximum acceptable loss of committed knowledge. | Best-effort; no formal target for pilot (C-20) | Proposed |
+| NFR-0043 | Recovery time objective | Maximum acceptable time to restore service after failure. | Best-effort; no formal target for pilot (C-20) | Proposed |
 | NFR-0044 | Resumability | A long-running operation resumes or compensates after an interruption rather than leaving inconsistent state. | Required | Proposed |
 | NFR-0045 | Projection failure isolation | Failure of a projection update does not roll back or corrupt a committed change set. | Required | Proposed |
 
@@ -104,7 +106,7 @@ gap in the quality baseline and it also gates several architecture decisions.
 | NFR-0061 | Agent versioning | Agent definitions are versioned, and a rollout can be rolled back. | Required | Proposed |
 | NFR-0062 | Ontology versioning | Ontology versions are immutable and a space records which version is active. | Required | Proposed |
 | NFR-0063 | Deprecation policy | Removal of a public capability is preceded by a defined notice period. | TBD | Proposed |
-| NFR-0064 | Protocol compatibility | The supported range of Model Context Protocol specification versions is declared. | TBD | Proposed |
+| NFR-0064 | Protocol compatibility | The supported range of Model Context Protocol specification versions is declared. | Targets spec `2026-07-28` (C-19); compatibility and deprecation policy TBD | Proposed |
 
 ## Accessibility and usability
 
@@ -152,12 +154,10 @@ considered complete.
 
 ## Open questions
 
-- What scale should the initial version be designed for?
-- Which availability and recovery objectives are justified for the first release?
 - What data classification will knowledge spaces be permitted to hold?
 - What residency and retention constraints apply?
 - What is the acceptable cost envelope per instance and per knowledge space?
-- Which Model Context Protocol specification versions must be supported?
+- What is the maximum size of a single canonical knowledge item?
 
 See the [assumptions and open questions register](assumptions-and-open-questions)
 for the full list.

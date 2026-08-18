@@ -48,6 +48,11 @@ Record in the structural architecture slice.
 | C-14 | The architecture vocabulary is Client Agent, Our IQ MCP Server, Our IQ Domain Agents, Our IQ Tool Services, Our IQ Data Services. |
 | C-15 | Authorization is managed at knowledge-space level, not per document, for the initial version. |
 | C-16 | Retrieval may read a projection that lags a canonical commit; eventual read-after-write consistency is acceptable. |
+| C-17 | The initial version targets pilot scale: one team, under 20 users, under 5,000 knowledge items per space. Revisit before a wider rollout. |
+| C-18 | Access control uses a small fixed role set per knowledge space: Owner, Ontology Manager, Contributor, Reader. |
+| C-19 | The initial version targets Model Context Protocol specification `2026-07-28`, accepting the compatibility risk of a very new spec. |
+| C-20 | The initial version targets best-effort availability with no formal recovery point or recovery time objective. Revisit before a wider rollout. |
+| C-21 | Azure Blob Storage (canonical knowledge), Azure Table Storage or Cosmos DB (control metadata), and Azure AI Search (retrieval projection) are the confirmed working direction for the canonical storage topology. The structural architecture slice still drafts the Architecture Decision Record with alternatives considered, per `AGENTS.md`. |
 
 ## Assumptions
 
@@ -71,7 +76,7 @@ Record in the structural architecture slice.
 | Q-01 | By what mechanism does a change set commit atomically across multiple documents and control metadata? |
 | Q-02 | How does a shared agent obtain the correct, current ontology on each invocation, and is the ontology version pinned for the duration of a change set? |
 | Q-03 | What are the legal knowledge-space lifecycle states and transitions, and what is readable or writable in each? |
-| Q-04 | What is the exact role taxonomy and capability granularity, and can permissions attach below a knowledge space? |
+| Q-04 | Within the confirmed role set (Owner, Ontology Manager, Contributor, Reader), what exact capabilities does each role grant, and how is group assignment and delegation handled? |
 | Q-05 | How does an unattended maintenance job prove the attended request or policy that authorized it, and for how long does that authority remain valid? |
 | Q-06 | What are the ontology's formal semantics: identity, referential integrity, cardinality, inheritance, and extensibility? |
 | Q-07 | How is knowledge content prevented from influencing the instructions or permitted tool set of any agent that processes it? |
@@ -83,7 +88,7 @@ Record in the structural architecture slice.
 | Q-10 | Does idempotency apply to intent submission, the resulting plan, or the commit, and what happens when identical input is resubmitted after the ontology or knowledge has changed? |
 | Q-11 | What is the complete error taxonomy for intent-level operations? |
 | Q-12 | What is the shape of an evidence item and its citation, and what confidence or completeness signals accompany it? |
-| Q-13 | Which Model Context Protocol specification versions are supported, and what is the compatibility and deprecation policy? |
+| Q-13 | Given the confirmed target of MCP spec `2026-07-28`, what is the compatibility and deprecation policy as later spec versions are released? |
 | Q-14 | Who may configure a space's mutation policy, may it vary by operation risk, who may approve, and does approval expire? |
 | Q-15 | What is the bulk import path, is it agent-mediated or operator-only, and does it bypass mutation policy? |
 
@@ -91,12 +96,11 @@ Record in the structural architecture slice.
 
 | ID | Question |
 | --- | --- |
-| Q-20 | What scale should the initial version be designed for, in users, spaces, items per space, and item size? |
-| Q-21 | Which availability, recovery point, and recovery time objectives apply? |
-| Q-22 | What data classification, residency, and retention constraints apply? |
-| Q-23 | What is the acceptable cost envelope per instance and per knowledge space? |
-| Q-24 | Which model deployments back each agent, and who governs prompt and model changes? |
-| Q-25 | Which platform services are selected for canonical storage, control metadata, retrieval projection, messaging, and orchestration? |
+| Q-21 | What data classification, residency, and retention constraints apply? |
+| Q-22 | What is the acceptable cost envelope per instance and per knowledge space? |
+| Q-23 | Which model deployments back each agent, and who governs prompt and model changes? |
+| Q-24 | Which specific Azure services finalize control metadata (Table Storage or Cosmos DB) and messaging or orchestration for long-running ontology and change-set jobs? |
+| Q-25 | What is the maximum size of a single canonical knowledge item? |
 
 ### Product direction
 
