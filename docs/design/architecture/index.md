@@ -10,3 +10,4 @@ requirements and decisions are approved.
 - [C4 views](c4/)
 - [Agentic execution model](agentic-execution-model)
 - [Logical knowledge model](logical-knowledge-model)
+- [API contract baseline](api-contract-baseline)

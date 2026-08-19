@@ -47,8 +47,8 @@ marks behaviour intentionally excluded from the initial version.
 | FR-0007 | The system shall allow an authorized user to retire a knowledge space so that normal use is disabled while retention policy applies. | Should | Proposed |
 | FR-0008 | The system shall allow an authorized user to delete a knowledge space, and shall report progress of the irreversible cleanup. | Should | Proposed |
 
-Acceptance criteria for FR-0003 and FR-0005 depend on the set of legal lifecycle
-states and transitions, which is an open question.
+Acceptance criteria for FR-0003 and FR-0005 use the lifecycle states and
+transition authorities defined in ADR-0019.
 
 ## Roles and access
 
@@ -130,11 +130,11 @@ is an open decision.
 | --- | --- | --- | --- |
 | FR-0070 | The system shall provide an administrative web portal including visual knowledge-graph exploration. | Deferred | Proposed |
 | FR-0071 | The system shall render graph, status, or review experiences through MCP Apps where the host supports them. | Deferred | Proposed |
-| FR-0072 | The system shall support bulk import of existing knowledge from an external source into a knowledge space. | Deferred | Proposed |
+| FR-0072 | The system shall support external-system import connectors into a knowledge space. | Deferred | Proposed |
 | FR-0073 | The system shall support retrieval spanning more than one knowledge space in a single operation. | Deferred | Proposed |
 
-FR-0072 is deferred but is a likely early follow-up, because a new knowledge
-space is otherwise empty until contributions accumulate.
+FR-0072 is deferred. Agent-mediated source-asset bootstrap is an initial
+contract, while source-specific external connectors require later design.
 
 ## Open questions
 

@@ -88,9 +88,7 @@ remain open.
 
 - How are untrusted-content controls enforced throughout agent processing
   (Q-07)?
-- What exact capabilities and delegation rules apply to each knowledge-space
-  role (Q-04)?
 - How do grant issuance, revocation, and limit accounting appear in the eventual
   management contract?
-- What error taxonomy, evidence schema, and public compatibility policy apply
-  (Q-11 to Q-13)?
+- What evidence schema details and completeness signals accompany retrieval
+  results (Q-12)?

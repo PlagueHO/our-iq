@@ -46,8 +46,9 @@ operations over knowledge documents.
 
 ## Implementation notes
 
-- IMP-001: Public tool names, request shapes, idempotency, and errors remain
-  open; see Q-10 and Q-11.
+- IMP-001: The baseline public inventory, idempotency, and errors are defined
+  in [API contract baseline](../architecture/api-contract-baseline). Exact
+  schema-hosting mechanics remain an implementation decision.
 
 ## References
 
