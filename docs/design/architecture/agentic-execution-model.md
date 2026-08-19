@@ -172,16 +172,24 @@ stateDiagram-v2
   Superseded --> [*]
 ```
 
-Knowledge-space legal lifecycle states and transitions remain Q-03. The design
-does not invent them. The execution context always carries the current
-lifecycle state, and tools gate operations against the transition rules once
-they are approved.
+Knowledge-space lifecycle states, transitions, and authorities are defined by
+[ADR-0019](../decisions/adr-0019-space-lifecycle-and-capabilities). The
+execution context carries the current lifecycle state and tools gate operations
+against that decision.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> LifecycleStateTBD: space created
-  LifecycleStateTBD --> LifecycleStateTBD: transition and operation rules in Q-03
-  LifecycleStateTBD --> [*]: retirement or deletion semantics in Q-03
+  [*] --> Draft: space created
+  Draft --> Pending: setup submitted
+  Pending --> Active: ontology approved
+  Active --> Readonly: owner restricts mutation
+  Active --> Maintenance: owner starts governed work
+  Active --> Retired: owner retires space
+  Readonly --> Active: owner restores service
+  Maintenance --> Active: governed work completes
+  Retired --> Deleting: owner starts deletion
+  Deleting --> Deleted: irreversible work completes
+  Deleted --> [*]
 ```
 
 ## Retrieval and optional synthesis

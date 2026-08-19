@@ -27,6 +27,8 @@ authoritative; this register is navigational.
 | ADR-0015 | [Transactional change-set visibility fence](adr-0015-transactional-change-set-visibility-fence) | Accepted | 2026-08-18 |
 | ADR-0016 | [Immutable execution-context snapshots](adr-0016-immutable-execution-context-snapshots) | Accepted | 2026-08-18 |
 | ADR-0017 | [Bounded unattended execution grants](adr-0017-bounded-unattended-execution-grants) | Accepted | 2026-08-18 |
+| ADR-0018 | [MCP contract boundaries and compatibility](adr-0018-mcp-contract-boundaries-and-compatibility) | Accepted | 2026-08-19 |
+| ADR-0019 | [Space lifecycle and capabilities](adr-0019-space-lifecycle-and-capabilities) | Accepted | 2026-08-19 |
 
 ## Template
 

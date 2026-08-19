@@ -57,6 +57,9 @@ Record in the structural architecture slice.
 | C-23 | Every invocation uses an immutable execution-context snapshot that pins its governing state; stale mutations are rejected. |
 | C-24 | Unattended execution requires an immutable, bounded execution grant linked to an attended approval or space policy. |
 | C-25 | Ontology rules use Required, Recommended, and Informational levels so structural validation can coexist with flexible knowledge guidance. |
+| C-26 | A knowledge-space ontology may include optional example Markdown templates that guide agents but are not strict validation contracts. |
+| C-27 | Domain Agents use private deterministic MCP tools with schema-bound JSON contracts; public MCP consumers use only intent-level operations. |
+| C-28 | Attachments are immutable source assets linked through provenance and citations; supported extraction produces representations that agents may interpret into canonical Markdown knowledge. |
 
 ## Assumptions
 
@@ -68,7 +71,7 @@ Record in the structural architecture slice.
 | A-04 | A knowledge space is small enough that an ontology migration can complete within an acceptable maintenance window. | Migration must become incremental and online, which is a materially harder design. |
 | A-05 | Contributors accept that an agent decides where their contribution is placed. | The deterministic path becomes the primary contribution route rather than an exception. |
 | A-06 | Calling agents prefer structured evidence over a narrative answer. | The default response shape must be reconsidered. |
-| A-08 | A knowledge space is usable once contributions accumulate through normal use. | Bulk import must be pulled into the initial version. |
+| A-08 | Agent-mediated bulk bootstrap can load existing team source assets under normal mutation policy. | External-system connectors require a separate ingestion design. |
 | A-10 | One instance serves one organization, so cross-tenant isolation is not required. | Multi-tenancy must be designed in rather than added later. |
 
 ## Open questions
@@ -77,20 +80,15 @@ Record in the structural architecture slice.
 
 | ID | Question |
 | --- | --- |
-| Q-03 | What are the legal knowledge-space lifecycle states and transitions, and what is readable or writable in each? |
-| Q-04 | Within the confirmed role set (Owner, Ontology Manager, Contributor, Reader), what exact capabilities does each role grant, and how is group assignment and delegation handled? |
 | Q-07 | How is knowledge content prevented from influencing the instructions or permitted tool set of any agent that processes it? |
 
 ### Blocking the API contract slice
 
 | ID | Question |
 | --- | --- |
-| Q-10 | Does idempotency apply to intent submission, the resulting plan, or the commit, and what happens when identical input is resubmitted after the ontology or knowledge has changed? |
-| Q-11 | What is the complete error taxonomy for intent-level operations? |
 | Q-12 | What is the shape of an evidence item and its citation, and what confidence or completeness signals accompany it? |
-| Q-13 | Given the confirmed target of MCP spec `2026-07-28`, what is the compatibility and deprecation policy as later spec versions are released? |
-| Q-14 | Who may configure a space's mutation policy, may it vary by operation risk, who may approve, and does approval expire? |
-| Q-15 | What is the bulk import path, is it agent-mediated or operator-only, and does it bypass mutation policy? |
+| Q-16 | Which private deterministic tool operations are required by each Domain Agent, and how are capabilities bound to agent definitions? |
+| Q-17 | What media types, extraction representations, size limits, and retention rules apply to source assets? |
 
 ### Blocking quality targets and platform decisions
 
@@ -117,7 +115,7 @@ Record in the structural architecture slice.
 | --- | --- | --- |
 | D-01 | Administrative web portal with visual knowledge-graph exploration | Operator value, but not required to prove the agent-first model |
 | D-02 | MCP Apps visual surfaces | Depends on host support and on the core contracts being stable |
-| D-03 | Bulk import from external systems | Likely the first follow-up; see A-08 |
+| D-03 | External-system import connectors | Agent-mediated source-asset bootstrap is in scope; connectors need source-specific ingestion design. |
 | D-04 | Retrieval across multiple knowledge spaces | Requires cross-space authorization and ranking semantics |
 | D-05 | Multi-tenancy | The initial version is single-tenant; see A-10 |
 | D-06 | External identity federation beyond the instance tenant | No confirmed requirement |

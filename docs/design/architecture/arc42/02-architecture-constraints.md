@@ -78,8 +78,8 @@ These may become mandatory once the corresponding question is answered.
 wider rollout.
 
 The initial version targets Model Context Protocol specification `2026-07-28`
-(`C-19`); the compatibility and deprecation policy as later versions release
-remains open (`Q-13`).
+(`C-19`). Additive contract changes are backward compatible; breaking changes
+require a major version and a prior-minor-version deprecation window.
 
 Question identifiers refer to the
 [assumptions and open questions register](../../product/assumptions-and-open-questions).

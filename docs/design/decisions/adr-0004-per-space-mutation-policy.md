@@ -48,8 +48,9 @@ against the target space's policy before canonical commitment.
 
 ## Implementation notes
 
-- IMP-001: Policy authority, operation-risk variation, and approval expiry remain
-  open; see Q-14.
+- IMP-001: Owner policy authority and approval expiry are defined by the
+  [API contract baseline](../architecture/api-contract-baseline). Operation-risk
+  variation remains an implementation decision.
 
 ## References
 
