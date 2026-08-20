@@ -67,10 +67,10 @@ These may become mandatory once the corresponding question is answered.
 
 | Candidate constraint | Blocking question | Status |
 | --- | --- | --- |
-| Data residency within a declared geography | Q-21 | Open |
-| Data classification limits per knowledge space | Q-21 | Open |
+| Production data residency and allowed geographies | Q-21 | Open beyond the single-geography pilot |
+| Production data classification limits per knowledge space | Q-21 | Open beyond the non-sensitive pilot |
 | Audit retention period | Q-21 | Open |
-| Network isolation requirements between components | Q-24 | Open |
+| Production network isolation requirements between components | Q-21 | Open |
 | Cost envelope per instance | Q-22 | Open |
 
 `CON-09` is amended: the initial version targets pilot scale (one team, under
@@ -80,6 +80,10 @@ wider rollout.
 The initial version targets Model Context Protocol specification `2026-07-28`
 (`C-19`). Additive contract changes are backward compatible; breaking changes
 require a major version and a prior-minor-version deprecation window.
+
+The first implementation increment accepts only non-sensitive synthetic or
+internal test data in one configured Azure geography. This is a pilot boundary,
+not approval for production or regulated data.
 
 Question identifiers refer to the
 [assumptions and open questions register](../../product/assumptions-and-open-questions).

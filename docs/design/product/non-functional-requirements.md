@@ -1,8 +1,8 @@
 ---
 title: Non-functional requirements
 status: Proposed
-owner: TBD
-reviewers: TBD
+owner: "@PlagueHO"
+reviewers: "@PlagueHO"
 ---
 
 ## Non-functional requirements
@@ -82,7 +82,7 @@ still depend on architecture decisions made in later slices.
 
 | ID | Quality attribute | Requirement | Target | Status |
 | --- | --- | --- | --- | --- |
-| NFR-0040 | Availability | Availability of retrieval for a space in the `ready` state. | Best-effort; no formal target for pilot (C-20) | Proposed |
+| NFR-0040 | Availability | Availability of retrieval for a space in the `active` state. | Best-effort; no formal target for pilot (C-20) | Proposed |
 | NFR-0041 | Degraded operation | Canonical knowledge remains readable when a derived projection is unavailable. | Required | Proposed |
 | NFR-0042 | Recovery point objective | Maximum acceptable loss of committed knowledge. | Best-effort; no formal target for pilot (C-20) | Proposed |
 | NFR-0043 | Recovery time objective | Maximum acceptable time to restore service after failure. | Best-effort; no formal target for pilot (C-20) | Proposed |
@@ -106,7 +106,7 @@ still depend on architecture decisions made in later slices.
 | NFR-0061 | Agent versioning | Agent definitions are versioned, and a rollout can be rolled back. | Required | Proposed |
 | NFR-0062 | Ontology versioning | Ontology versions are immutable and a space records which version is active. | Required | Proposed |
 | NFR-0063 | Deprecation policy | Removal of a public capability is preceded by a defined notice period. | TBD | Proposed |
-| NFR-0064 | Protocol compatibility | The supported range of Model Context Protocol specification versions is declared. | Targets spec `2026-07-28` (C-19); compatibility and deprecation policy TBD | Proposed |
+| NFR-0064 | Protocol compatibility | The supported range of Model Context Protocol specification versions is declared. | Targets spec `2026-07-28`; compatibility and deprecation follow ADR-0018 | Proposed |
 
 ## Accessibility and usability
 
@@ -151,6 +151,12 @@ considered complete.
 - Untrusted content handling: NFR-0010.
 - Atomicity, provenance, and groundedness: NFR-0020 to NFR-0022.
 - Degraded operation and projection failure isolation: NFR-0041, NFR-0045.
+
+For the first implementation increment, these attributes use deterministic
+pass/fail gates. Retrieval, contribution, projection-visibility, and ontology
+approval latency are instrumented at p50 and p95; numeric latency budgets are
+set from the first representative baseline rather than guessed before evidence
+exists.
 
 ## Open questions
 

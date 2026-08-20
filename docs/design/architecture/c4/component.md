@@ -90,7 +90,7 @@ flowchart LR
 | Component | Responsibility | Collaborators |
 | --- | --- | --- |
 | Retrieval coordinator | Obtain authorized candidate knowledge and verify canonical citation sources. | Derived projections; canonical revisions |
-| Citation assembler | Build structured grounded evidence for the later public contract. | Retrieval coordinator; Domain Agent |
+| Citation assembler | Build structured grounded evidence defined by the API contract baseline. | Retrieval coordinator; Domain Agent |
 | Ontology proposal and migration coordinator | Create reviewable ontology proposals and governed migration plans. | Domain Agent; operation status |
 | Operation status and grants | Track long-running work and validate bounded unattended authority. | Control metadata; Tool Services |
 
@@ -100,5 +100,6 @@ flowchart LR
   flows, identity-sensitive hops, and state lifecycle.
 - [Logical knowledge model](../logical-knowledge-model) defines the canonical
   item and ontology-rule semantics.
-- The precise private interfaces and independently deployable boundaries remain
-  open until implementation planning.
+- The [API contract baseline](../api-contract-baseline) binds initial private
+  tools to the three Domain Agent definitions. Logical Tool Service components
+  share one private deployable for the pilot.

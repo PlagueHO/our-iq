@@ -120,9 +120,10 @@ with the reason for deferral.
 
 ## Open questions
 
-- What is the smallest end-to-end slice that would validate the structure-first
-  bet: ontology creation, one contribution, and one scoped retrieval?
+- What evidence from the selected ontology, contribution, and retrieval thin
+  slice validates or rejects the structure-first bet?
 - Which strategy is most affected if the confirmed knowledge-space-level
   authorization model changes in a future version?
-- Should the deterministic path reuse the change-set ledger, or is it a distinct
-  audited operation?
+
+The deterministic correction path reuses the revision and visibility-fence
+publication protocol while retaining a distinct authorization and audit route.

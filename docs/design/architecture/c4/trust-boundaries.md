@@ -23,7 +23,7 @@ flowchart LR
   end
 
   subgraph agent[Agent-runtime boundary]
-    domain[Our IQ Domain Agents<br/>Shared, versioned definitions]
+    domain[Ontology, Contribution, Retrieval Agents<br/>Fixed tool manifests]
   end
 
   subgraph private[Private application boundary]
@@ -32,9 +32,9 @@ flowchart LR
   end
 
   subgraph data[Private data boundary]
-    canonical[(Authoritative canonical Markdown)]
-    control[(Authoritative control metadata)]
-    projection((Derived search and graph projections))
+    canonical[(Azure Blob Storage<br/>Authoritative canonical Markdown)]
+    control[(Cosmos DB<br/>Authoritative control and ontology)]
+    projection((Azure AI Search<br/>Derived retrieval projection))
   end
 
   subgraph observability[Observability boundary]
@@ -62,16 +62,14 @@ flowchart LR
 | Boundary | Permitted flow | Constraint |
 | --- | --- | --- |
 | Public | Client Agent to public intent MCP tools | No public document or ontology CRUD. |
-| Agent runtime | MCP Server to Domain Agents; Domain Agents to private Tool Services | Agent content is untrusted input and must not alter instructions or tool permissions. |
+| Agent runtime | MCP Server to Domain Agents; Domain Agents to private Tool Services | Immutable instructions and fixed tool manifests cannot be altered by content. |
 | Private application | Tool and management operations to data dependencies | Tool Services use their own managed identities. |
 | Data | Canonical and control writes; projection rebuilds | Canonical writes are atomic, versioned change sets; projections are non-authoritative. |
 | Management | Privileged correction or removal of an identified document | Subject to policy, authorization, versioning, and audit. |
 | Observability | Traces, metrics, logs, and audit evidence from every major flow | Retention, service, and alert rules remain open. |
 
-## Open questions
+## Deferred questions
 
-- How are prompt-injection controls enforced at each agent-processing boundary
-  (Q-07)?
 - What storage and retention controls apply to audit and observability data
   (Q-21)?
 - How are grant issuance, revocation, and execution limits represented in the

@@ -1,8 +1,8 @@
 ---
 title: Vision and scope
 status: Proposed
-owner: TBD
-reviewers: TBD
+owner: "@PlagueHO"
+reviewers: "@PlagueHO"
 ---
 
 ## Vision and scope

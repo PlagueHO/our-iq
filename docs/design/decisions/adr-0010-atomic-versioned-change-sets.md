@@ -43,7 +43,8 @@ Partial canonical commits are not permitted or observable.
 
 ### Negative
 
-- NEG-001: The cross-document commit protocol is a critical unresolved design.
+- NEG-001: The cross-document commit protocol requires immutable staging and a
+  separate transactional visibility fence.
 
 ## Implementation notes
 

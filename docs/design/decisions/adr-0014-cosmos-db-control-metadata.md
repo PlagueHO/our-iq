@@ -38,6 +38,7 @@ messaging, job-orchestration, networking, retention, or deployment design.
 | Alternative | Rejection or selection rationale |
 | --- | --- |
 | Azure Table Storage control metadata | Rejected because it does not provide the required multi-record transactional publication boundary. |
+| Azure Storage-only control plane with immutable blobs, Table records, Queue messages, and one ETag-guarded head blob | Reconsidered for the pilot and not selected. It can provide a simpler compare-and-swap visibility fence, but changes the accepted control model, weakens cross-record invariants, and introduces a later control-plane migration without enough benefit at the current scope. |
 | Azure Cosmos DB control metadata partitioned by knowledge space | Selected because transactional batches can coordinate one space's control records. |
 | Put control records only in canonical Markdown | Rejected because execution coordination, policy state, and atomic publication need a private authoritative control boundary. |
 
@@ -71,3 +72,5 @@ messaging, job-orchestration, networking, retention, or deployment design.
 ## Review record
 
 - 2026-08-18: Accepted by @PlagueHO for design slice #7.
+- 2026-08-20: Storage-only POC alternative reconsidered; Cosmos DB retained by
+  @PlagueHO.

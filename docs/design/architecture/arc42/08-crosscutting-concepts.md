@@ -21,10 +21,11 @@ to previously authorized or policy-authorized maintenance. Each Tool Service
 uses its own managed identity for data access.
 
 Authorization applies at the knowledge-space boundary and evaluates the
-intersection of user permissions and agent capabilities. The fixed role set and
-its exact capabilities remain open. See
-[ADR-0007](../../decisions/adr-0007-agent-identity-and-execution-context) and
-[ADR-0008](../../decisions/adr-0008-service-managed-identities).
+intersection of user permissions and agent capabilities. ADR-0019 defines the
+fixed role set and initial capability matrix. See
+[ADR-0007](../../decisions/adr-0007-agent-identity-and-execution-context),
+[ADR-0008](../../decisions/adr-0008-service-managed-identities), and
+[ADR-0019](../../decisions/adr-0019-space-lifecycle-and-capabilities).
 
 An immutable execution-context snapshot pins the agent definition, ontology,
 policy, canonical head, and identities for every invocation. Tool Services
@@ -71,10 +72,11 @@ See [ADR-0003](../../decisions/adr-0003-agent-mediated-ontology-management),
 ## Grounded retrieval and untrusted content
 
 The default retrieval result is structured evidence with citations to canonical
-knowledge. Narrative synthesis is opt-in. Knowledge content is untrusted input
-when processed by agents and must not alter agent instructions or permitted
-tools. See [ADR-0013](../../decisions/adr-0013-grounded-evidence-default) and
-NFR-0010.
+knowledge. Narrative synthesis is opt-in. Knowledge content is untrusted data.
+Immutable instructions, fixed tool manifests, schema validation, provenance,
+output-policy checks, and fail-closed handling enforce that boundary. See
+[ADR-0013](../../decisions/adr-0013-grounded-evidence-default),
+[ADR-0020](../../decisions/adr-0020-untrusted-content-isolation), and NFR-0010.
 
 ## Observability and resilience
 
@@ -84,11 +86,8 @@ Projection failure must not roll back or corrupt committed canonical state.
 Specific telemetry services, alerting, audit retention, and recovery targets
 remain open.
 
-## Open questions
+## Deferred questions
 
-- How are untrusted-content controls enforced throughout agent processing
-  (Q-07)?
 - How do grant issuance, revocation, and limit accounting appear in the eventual
   management contract?
-- What evidence schema details and completeness signals accompany retrieval
-  results (Q-12)?
+- Which production telemetry and audit-retention controls satisfy Q-21?

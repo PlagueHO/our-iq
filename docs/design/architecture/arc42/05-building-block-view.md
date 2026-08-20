@@ -18,11 +18,11 @@ accepted ADRs; it does not describe deployed components or API contracts.
 | Building block | Responsibility | Interfaces | Status |
 | --- | --- | --- | --- |
 | Client Agent | Represents a user and invokes public intent-level operations. | Public MCP tools | External |
-| Our IQ MCP Server | Exposes the public MCP interface; authenticates, authorizes, validates, and routes intent. | Public MCP tools; private Domain Agent invocation | Proposed |
+| Our IQ MCP Server | Exposes the public MCP interface; authenticates, authorizes, validates, and routes intent. | Public MCP tools; private Domain Agent invocation | Selected .NET ASP.NET Core Azure Container App |
 | Our IQ Domain Agents | Interpret contribution, retrieval, and ontology intent using space-specific context. | Private tool invocations | Required runtime: Microsoft Foundry Agent Service |
-| Our IQ Tool Services | Execute deterministic operations for domain agents, including context validation, policy, canonical change-set, retrieval, projection, grant, and operation services. | Private domain tools and management APIs | Proposed |
-| Our IQ Data Services | Hold canonical knowledge, control metadata, projections, and audit/observability data. | Private data interfaces | Proposed; individual services are Candidate |
-| Management clients | Perform privileged operator and steward work outside ordinary contributor tools. | Private management APIs and command-line workflows | Proposed |
+| Our IQ Tool Services | Execute deterministic operations for domain agents, including context validation, policy, canonical change-set, retrieval, projection, grant, and operation services. | Private domain tools and management APIs | Selected .NET ASP.NET Core Azure Container App |
+| Our IQ Data Services | Hold canonical knowledge, control metadata, projections, and audit/observability data. | Private data interfaces | Blob Storage, Cosmos DB, and Azure AI Search selected for the initial implementation |
+| Management clients | Perform privileged operator and steward work outside ordinary contributor tools. | Private management APIs and command-line workflows | Logical surface in the private Tool Services deployment for the pilot |
 
 The public MCP boundary ends at the Our IQ MCP Server. Domain Agent and Tool
 Service interfaces are private architecture boundaries and are not public MCP
@@ -45,13 +45,14 @@ tools. This distinction preserves
 
 | Data kind | Authority | Required treatment |
 | --- | --- | --- |
-| Canonical Markdown and front matter | Authoritative | Governed writes, atomic change sets, versioning, provenance |
+| Canonical Markdown and front matter | Authoritative | Immutable Azure Blob revisions, governed writes, atomic change sets, versioning, provenance |
 | Control metadata | Authoritative | Cosmos DB records governance, grants, and per-space change-set coordination |
-| Search and graph projections | Derived and rebuildable | May lag canonical commits; never determine canonical truth |
+| Azure AI Search projection | Derived and rebuildable | May lag canonical commits; never determines canonical truth |
 | Audit and observability records | Operational evidence | Retention and service selection remain open |
 
-## Open questions
+## Deferred questions
 
-- Which Tool Services are independently deployable, and what are their private
-  contracts?
-- Which service coordinates long-running work (Q-24)?
+- Which logical Tool Service, if any, needs a separate deployment after the
+  pilot?
+- Which service coordinates long-running work after the synchronous thin slice
+  (Q-24)?

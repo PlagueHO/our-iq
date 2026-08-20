@@ -65,8 +65,9 @@ classDiagram
 
 ## Canonical front-matter contract
 
-The following example is illustrative. Field names and public representations
-remain subject to the API-contract slice.
+The following example is illustrative of canonical knowledge. Public
+representations follow the API contract baseline; ontology serialization follows
+the [ontology storage contract](ontology-storage-contract).
 
 ```yaml
 ---
@@ -216,5 +217,8 @@ an ordinary change plan can resolve the relationship.
   establishes Markdown with structured front matter as canonical.
 - [ADR-0015](../decisions/adr-0015-transactional-change-set-visibility-fence)
   defines complete revision visibility.
-- Exact ontology language syntax, public evidence schema, lifecycle
-  transitions, and detailed role capabilities remain open.
+- [ADR-0021](../decisions/adr-0021-ontology-version-persistence) and the
+  [ontology storage contract](ontology-storage-contract) define the ontology
+  payload, version, digest, and activation boundary.
+- Public evidence, lifecycle transitions, and initial role capabilities are
+  defined by the API contract baseline and ADR-0019.

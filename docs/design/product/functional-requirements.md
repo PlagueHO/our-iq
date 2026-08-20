@@ -1,8 +1,8 @@
 ---
 title: Functional requirements
 status: Proposed
-owner: TBD
-reviewers: TBD
+owner: "@PlagueHO"
+reviewers: "@PlagueHO"
 ---
 
 ## Functional requirements
@@ -61,8 +61,10 @@ transition authorities defined in ADR-0019.
 | FR-0014 | The system shall permit unattended execution only for maintenance work already authorized by an attended request or by explicit knowledge-space policy. | Must | Proposed |
 | FR-0015 | The system shall record both the initiating user and the acting agent identity for every operation that reads or changes knowledge. | Must | Proposed |
 
-The exact role taxonomy and capability granularity are open questions. The
-working capability model is recorded in [Vision and scope](vision-and-scope).
+The fixed Owner, Ontology Manager, Contributor, and Reader role set and its
+initial capability matrix are defined by
+[ADR-0019](../decisions/adr-0019-space-lifecycle-and-capabilities). Every
+operation contract declares the capability and legal states it requires.
 
 ## Ontology lifecycle
 
@@ -94,8 +96,8 @@ working capability model is recorded in [Vision and scope](vision-and-scope).
 | FR-0039 | The system shall not expose document-level create, update, or delete operations to ordinary contributors on its public interface. | Must | Proposed |
 | FR-0040 | The system shall detect and reject a change plan that was produced against a superseded ontology version or superseded document state. | Must | Proposed |
 
-Acceptance criteria for FR-0035 depend on the change-set commit mechanism, which
-is an open decision.
+Acceptance criteria for FR-0035 use the transactional visibility fence defined
+by [ADR-0015](../decisions/adr-0015-transactional-change-set-visibility-fence).
 
 ## Knowledge retrieval
 
@@ -138,12 +140,16 @@ contract, while source-specific external connectors require later design.
 
 ## Open questions
 
-- Which lifecycle states exist and which transitions are legal?
-- Who may configure a space's mutation policy, and may it vary by operation risk?
-- Who may confirm or approve a change plan, and does a confirmation expire?
-- What is the exact role taxonomy, and can permissions attach below a space?
-- What is the response when a contribution is ambiguous rather than invalid?
-- Must FR-0072 be pulled into the initial version to make a new space usable?
+- Which source-asset types and extraction representations follow the text-only
+  first increment?
+- Which long-running operations are implemented in the first production-capable
+  release after the synchronous thin slice?
+
+Lifecycle, mutation-policy ownership, role capabilities, approval expiry,
+space-level authorization, ambiguous contribution behaviour, and the bootstrap
+boundary are resolved in ADR-0019, the
+[API contract baseline](../architecture/api-contract-baseline), and the
+[initial implementation readiness baseline](../architecture/implementation-readiness).
 
 See the [assumptions and open questions register](assumptions-and-open-questions)
 for the full list.
