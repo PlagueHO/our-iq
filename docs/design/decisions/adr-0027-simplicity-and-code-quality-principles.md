@@ -82,8 +82,8 @@ harder to understand or test.
 
 ## References
 
-- REF-001: [AGENTS.md](../../../AGENTS.md).
-- REF-002: [Copilot instructions](../../../.github/copilot-instructions.md).
+- REF-001: [AGENTS.md](https://github.com/PlagueHO/our-iq/blob/main/AGENTS.md).
+- REF-002: [Copilot instructions](https://github.com/PlagueHO/our-iq/blob/main/.github/copilot-instructions.md).
 - REF-003: [ADR-0025](adr-0025-dotnet-technology-and-package-baseline).
 - REF-004: [ADR-0026](adr-0026-implementation-platform-and-delivery-conventions).
 
