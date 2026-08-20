@@ -15,6 +15,8 @@ storage APIs, or a selected implementation framework.
 The target public MCP specification is `2026-07-28`. Compatibility, versioning,
 and deprecation direction are recorded in
 [ADR-0018](../decisions/adr-0018-mcp-contract-boundaries-and-compatibility).
+The first implementable subset is defined in the
+[initial implementation readiness baseline](implementation-readiness).
 
 ## Contract boundaries
 
@@ -148,6 +150,23 @@ to newer state. A state-sensitive call validates the pinned lifecycle status,
 ontology version and digest, mutation policy, canonical head, identity context,
 and unattended grant when applicable.
 
+### Domain Agent tool manifests
+
+Each immutable agent definition pins its model deployment, instructions,
+contract version, and fixed private tool manifest. Tool Services reject calls
+outside that manifest even when a model requests them.
+
+| Agent | Initial private tool manifest |
+| --- | --- |
+| Ontology Agent | `get_space`, `get_ontology`, `list_all_templates`, `get_template`, `stage_ontology_version`, `validate_ontology_compatibility`, `record_approval`, `activate_ontology_version` |
+| Contribution Agent | `get_space`, `get_ontology`, `get_canonical_snapshot`, `search_evidence`, `read_canonical_evidence`, `validate_change_plan`, `stage_knowledge_revisions`, `commit_change_set` |
+| Retrieval Agent | `get_space`, `get_ontology`, `search_evidence`, `read_canonical_evidence` |
+
+The Retrieval Agent manifest is read-only. The Contribution Agent cannot stage
+or activate an ontology. The Ontology Agent cannot commit knowledge revisions.
+Changing a manifest creates a new agent-definition version and requires
+evaluation and owner approval.
+
 ## Bulk bootstrap contract
 
 `bootstrap_knowledge` accepts source assets and optional text for a new or
@@ -179,6 +198,35 @@ findings. It must not claim unsupported knowledge. Whether a particular asset
 type is supported is returned explicitly; the final supported media matrix and
 size limits remain open.
 
+The first implementation increment accepts UTF-8 text and Markdown only.
+Binary attachments, extraction, and source-specific retention are explicitly
+deferred beyond that increment. The broader contract above remains the design
+target and must not be presented as implemented by the text-only slice.
+
+## Evidence and citation contract
+
+`query_knowledge` returns a `completeness` value of `complete`, `partial`, or
+`insufficient`, plus zero or more stable reason codes. It does not return a
+model-generated numeric confidence score.
+
+Each evidence item contains:
+
+| Field | Requirement |
+| --- | --- |
+| `knowledgeItemId` | Stable canonical item identity. |
+| `revisionId` | Active immutable revision used as evidence. |
+| `title` | Human-readable title from canonical front matter. |
+| `excerpt` | Exact canonical Markdown excerpt; never projection-generated text. |
+| `citation` | Canonical asset reference, revision digest, and excerpt locator. |
+| `matchedBy` | Metadata paths, relationship assertions, lexical terms, or semantic candidate reason used to select the item. |
+| `projectionFreshness` | Indexed canonical-head version, current canonical-head version, and freshness state. |
+| `provenance` | Change-set and source references the authorized caller may inspect. |
+
+Azure AI Search returns candidates and match metadata. Tool Services resolve
+every candidate to the active canonical Blob revision and construct the excerpt
+and citation from that revision. A missing or mismatched canonical revision is
+not returned as evidence.
+
 ## Idempotency and concurrency
 
 Idempotency applies to the caller's submitted operation, not to agent reasoning
@@ -207,6 +255,7 @@ in general:
 | `validation_failed` | Required schema or ontology validation failed. | Correct input or plan. |
 | `policy_rejected` | Mutation policy rejects the requested route. | Use the required approval route. |
 | `insufficient_grounding` | Evidence cannot support a requested conclusion. | Supply evidence or narrow the request. |
+| `clarification_required` | Contribution intent has multiple materially different grounded interpretations. | Answer the focused questions and resubmit; no plan or mutation exists. |
 | `partial_plan` | Some source material could not be interpreted safely. | Review gaps and decide whether to proceed. |
 | `approval_expired` | Required confirmation or approval is no longer valid. | Re-plan or obtain a new approval. |
 | `replan_required` | Pinned ontology version, lifecycle, policy, or canonical head is stale or incompatible. | Submit or obtain a new plan. |
@@ -218,6 +267,10 @@ in general:
 source and never authorizes unsupported conclusions. `approval_expired` is the
 confirmation-timeout result. A stale ontology version always returns
 `replan_required`; it is not silently migrated.
+
+`clarification_required` is not a validation failure or partial plan. It returns
+grounded ambiguity reasons and focused questions, consumes no approval, and
+creates no staged revision.
 
 ## Worked public exemplar: contribute knowledge
 
@@ -239,6 +292,7 @@ filtering are not applicable.
 | Response outcome | Required fields | Meaning |
 | --- | --- | --- |
 | `no_change` | `knowledgeSpaceId`, `evidence`, `correlationId` | Cited canonical evidence shows no change is required. |
+| `clarification_required` | `knowledgeSpaceId`, `ambiguities`, `questions`, `correlationId` | More than one materially different grounded interpretation exists; no plan is created. |
 | `plan_ready` | `planId`, `snapshot`, `policyRoute`, `changes`, `findings`, `correlationId` | Reviewable, snapshot-pinned plan is available. |
 | `partial_plan` | Plan-ready fields and source gaps | Only high-confidence grounded changes are planned. |
 | `replan_required` | `correlationId`, current-state reason | Pinned state became stale before approval or commit. |
@@ -316,25 +370,21 @@ fence, and returns either a committed change-set reference or
 
 ## Interaction flow baseline
 
-The following flows require full sequence and state-transition specifications
-before implementation:
+The selected thin slice has sufficient lifecycle, capability, evidence,
+ambiguity, ontology-storage, contribution, and stale-state contracts to begin
+implementation. Later release flows retain these additional contract needs:
 
 | Flow | Required contract decisions |
 | --- | --- |
-| Create and bootstrap space | Lifecycle transition authority, setup artifact schema, ontology approval, bootstrap batching, and active-state gate. |
-| Add or update knowledge | Content/attachment input, optional hints, plan states, approval route, stale-plan handling, and source provenance. |
-| Retrieve knowledge | Evidence and citation schema, completeness indicators, filters, freshness, and synthesis mode. |
-| Change ontology | Grounding input, proposal review, template management, compatibility, migration, and maintenance-state rules. |
-| Administer a space | Role capability matrix, lifecycle transition authority, mutation-policy ownership, audit, and deletion semantics. |
+| Bulk bootstrap | Batching, checkpoint persistence, cancellation, extraction support, and selected long-running orchestrator. |
+| Change an active ontology | Migration scheduling, compensation, and maintenance-state recovery. |
+| Rebuild projections | Asynchronous orchestration, generation switching, and rollback. |
+| Delete a space | Retention enforcement, irreversible cleanup order, and operational proof. |
 
-## Open questions
+## Deferred contract questions
 
-- What exact capability matrix applies to Owner, Ontology Manager, Contributor,
-  and Reader?
-- Which lifecycle transitions are permitted and who may execute each one?
-- What source-asset media types, extraction outputs, retention rules, and size
-  limits are supported?
-- What is the final JSON Schema publication, validation, and compatibility
-  mechanism for MCP and management contracts?
-- Which private tool operations are required by each Domain Agent and how are
-  their capabilities bound to an agent definition?
+- Which binary source-asset media types, extraction outputs, retention rules,
+  and size limits are supported after the text-only increment?
+- Which transport and publication mechanism hosts public and private JSON
+  Schemas?
+- Which orchestrator implements monitored long-running operations?

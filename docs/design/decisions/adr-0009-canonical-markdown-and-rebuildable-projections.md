@@ -29,8 +29,9 @@ rebuildable projections, never sources of truth.
 
 The accepted topology direction uses Azure Blob Storage for canonical knowledge,
 Azure AI Search for retrieval projection, and Cosmos DB for control metadata.
-Blob Storage and Azure AI Search remain Candidate services; Cosmos DB is
-selected for the per-space control-record transaction boundary.
+Blob Storage and Azure AI Search are selected for the initial implementation;
+Cosmos DB remains selected for the per-space control-record transaction
+boundary.
 
 ## Alternatives considered
 
@@ -50,13 +51,14 @@ selected for the per-space control-record transaction boundary.
 ### Negative
 
 - NEG-001: Projection freshness may lag canonical commitment.
-- NEG-002: The final control-metadata store and graph-projection need remain open.
+- NEG-002: Canonical and projection stores have separate consistency and
+  operational models.
 
 ## Implementation notes
 
-- IMP-001: Azure Blob Storage and Azure AI Search are `Candidate` services;
-  Cosmos DB is selected only for control metadata. No deployed implementation
-  is implied.
+- IMP-001: [ADR-0022](adr-0022-initial-azure-data-plane) selects Azure Blob
+  Storage for canonical revisions and Azure AI Search for the initial
+  projection. No deployed implementation is implied.
 - IMP-002: Projection lag is acceptable for the initial version; see C-16.
 
 ## References

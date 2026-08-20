@@ -10,10 +10,8 @@ status: Proposed
 Show the major deployable or independently meaningful parts inside the system
 boundary after they are decided.
 
-This view is `Proposed`. The named Azure services are status-labelled
-candidates, except for required Microsoft Foundry Agent Service and Microsoft
-Entra constraints and selected Cosmos DB control metadata. It does not
-describe a deployment.
+This view is `Proposed`. It applies the selected initial implementation services
+without claiming that a deployment exists.
 
 ```mermaid
 flowchart LR
@@ -22,12 +20,12 @@ flowchart LR
   foundry[Microsoft Foundry Agent Service<br/>Required]
 
   subgraph public[Public intent boundary]
-    mcp[Our IQ MCP Server<br/>Candidate Azure Container Apps compute]
+    mcp[Our IQ MCP Server<br/>Selected .NET Azure Container App]
   end
 
   subgraph private[Private application boundary]
-    tools[Our IQ Tool Services<br/>Candidate Azure Container Apps compute]
-    management[Management APIs and maintenance commands<br/>Candidate Azure Container Apps compute]
+    tools[Our IQ Tool Services<br/>Selected .NET Azure Container App]
+    management[Management APIs and maintenance commands<br/>Logical private surface]
   end
 
   subgraph agent[Agent-runtime boundary]
@@ -35,10 +33,9 @@ flowchart LR
   end
 
   subgraph data[Private data boundary]
-    canonical[(Canonical knowledge<br/>Markdown and front matter<br/>Candidate Azure Blob Storage)]
+    canonical[(Canonical knowledge<br/>Markdown and front matter<br/>Selected Azure Blob Storage)]
     control[(Control metadata<br/>Selected Cosmos DB)]
-    projection((Derived retrieval projection<br/>Candidate Azure AI Search))
-    graph((Derived graph projection<br/>Candidate service open))
+    projection((Derived retrieval projection<br/>Selected Azure AI Search))
   end
 
   client -->|public intent MCP tools| mcp
@@ -50,7 +47,6 @@ flowchart LR
   tools --> canonical
   tools --> control
   canonical -. rebuild .-> projection
-  canonical -. rebuild .-> graph
 ```
 
 **Notation:** rounded database shapes represent authoritative canonical or
@@ -60,20 +56,19 @@ flows. A projection may lag a canonical commit and is never authoritative.
 
 | Container | Responsibility | Technology | Status |
 | --- | --- | --- | --- |
-| Our IQ MCP Server | Public intent-level MCP operation handling. | Azure Container Apps | Candidate compute |
+| Our IQ MCP Server | Public intent-level MCP operation handling. | .NET, ASP.NET Core, official MCP C# SDK, Azure Container Apps | Selected |
 | Our IQ Domain Agents | Agent-mediated contribution, retrieval, and ontology reasoning. | Microsoft Foundry Agent Service | Required |
-| Our IQ Tool Services | Deterministic private domain operations and data coordination. | Azure Container Apps | Candidate compute |
-| Management APIs and maintenance commands | Privileged operator and steward capability. | Azure Container Apps | Candidate compute |
-| Canonical knowledge store | Stores authoritative Markdown and front matter. | Azure Blob Storage | Candidate |
+| Our IQ Tool Services | Deterministic private domain operations and data coordination. | .NET, ASP.NET Core, Azure Container Apps | Selected |
+| Management APIs and maintenance commands | Privileged operator and steward capability. | Logical surface in private Tool Services | Selected for pilot |
+| Canonical knowledge store | Stores authoritative Markdown and front matter. | Azure Blob Storage | Selected |
 | Control metadata store | Stores governance and per-space change-set coordination metadata. | Cosmos DB | Selected |
-| Retrieval projection | Supports hybrid retrieval from rebuildable derived data. | Azure AI Search | Candidate |
-| Graph projection | Supports relationship traversal if justified. | Open | Candidate service undecided |
+| Retrieval projection | Supports hybrid retrieval and ontology-declared filters and relationships. | Azure AI Search | Selected |
 
-## Open questions
+## Deferred questions
 
-- Which Tool Services become separate deployable units and what private contracts
-  do they expose?
-- Is a dedicated graph projection justified, and if so, which service supports
-  it (D-08 and Q-24)?
-- Which candidate services require private endpoints and which network
-  constraints govern them (Q-21 and Q-24)?
+- Which logical Tool Service requires a separate deployable after pilot
+  measurements?
+- Is a dedicated graph projection justified after Azure AI Search relationship
+  filtering is evaluated (D-08)?
+- Which selected services require private endpoints under future production
+  network constraints (Q-21)?

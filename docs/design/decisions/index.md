@@ -29,6 +29,14 @@ authoritative; this register is navigational.
 | ADR-0017 | [Bounded unattended execution grants](adr-0017-bounded-unattended-execution-grants) | Accepted | 2026-08-18 |
 | ADR-0018 | [MCP contract boundaries and compatibility](adr-0018-mcp-contract-boundaries-and-compatibility) | Accepted | 2026-08-19 |
 | ADR-0019 | [Space lifecycle and capabilities](adr-0019-space-lifecycle-and-capabilities) | Accepted | 2026-08-19 |
+| ADR-0020 | [Untrusted content isolation](adr-0020-untrusted-content-isolation) | Accepted | 2026-08-19 |
+| ADR-0021 | [Ontology version persistence](adr-0021-ontology-version-persistence) | Accepted | 2026-08-19 |
+| ADR-0022 | [Initial Azure data plane](adr-0022-initial-azure-data-plane) | Accepted | 2026-08-19 |
+| ADR-0023 | [.NET Container Apps boundaries](adr-0023-dotnet-container-apps-boundaries) | Accepted | 2026-08-19 |
+| ADR-0024 | [Domain Agent capability governance](adr-0024-domain-agent-capability-governance) | Accepted | 2026-08-19 |
+| ADR-0025 | [.NET technology and package baseline](adr-0025-dotnet-technology-and-package-baseline) | Accepted | 2026-08-19 |
+| ADR-0026 | [Implementation platform and delivery conventions](adr-0026-implementation-platform-and-delivery-conventions) | Accepted | 2026-08-20 |
+| ADR-0027 | [Simplicity and code quality principles](adr-0027-simplicity-and-code-quality-principles) | Accepted | 2026-08-20 |
 
 ## Template
 

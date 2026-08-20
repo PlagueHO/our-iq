@@ -3,13 +3,13 @@ title: C4 candidate Azure deployment
 status: Proposed
 ---
 
-## C4 candidate Azure deployment
+## C4 initial Azure deployment
 
 ## Purpose
 
-Map the accepted Azure hosting constraint to candidate compute, data, and
-network boundaries. This view is `Proposed`; no Azure environment is deployed.
-Cosmos DB is selected only as the control-metadata service.
+Map the accepted Azure hosting constraint and selected initial services to
+compute, data, and network boundaries. This view is `Proposed`; no Azure
+environment is deployed.
 
 ```mermaid
 flowchart LR
@@ -18,20 +18,20 @@ flowchart LR
   foundry[Microsoft Foundry Agent Service<br/>Required]
 
   subgraph azure[Microsoft Azure - required hosting boundary]
-    subgraph vnet[Candidate virtual network]
-      subgraph aca[Candidate Azure Container Apps environment]
-        mcp[Our IQ MCP Server]
-        tools[Our IQ Tool Services]
-        management[Management APIs and maintenance commands]
+    subgraph vnet[Proposed virtual network]
+      subgraph aca[Selected Azure Container Apps environment]
+        mcp[Public .NET Our IQ MCP Server]
+        tools[Private .NET Our IQ Tool Services]
+        management[Private management surface]
       end
 
       pe[Candidate private endpoints]
     end
 
-    blob[(Candidate Azure Blob Storage<br/>Canonical Markdown)]
+    blob[(Selected Azure Blob Storage<br/>Canonical Markdown)]
     cosmos[(Selected Cosmos DB<br/>Control metadata)]
-    search((Candidate Azure AI Search<br/>Derived retrieval projection))
-    telemetry[Observability service<br/>Open]
+    search((Selected Azure AI Search<br/>Derived retrieval projection))
+    telemetry[Application Insights and Azure Monitor<br/>Selected]
   end
 
   client -->|public MCP operations| mcp
@@ -53,23 +53,25 @@ flowchart LR
 | Microsoft Azure | Required | CON-08 requires Azure hosting. |
 | Microsoft Foundry Agent Service | Required | [ADR-0005](../../decisions/adr-0005-foundry-agent-runtime) requires the backend agent runtime. |
 | Microsoft Entra | Required | [ADR-0007](../../decisions/adr-0007-agent-identity-and-execution-context) requires distinct user and agent identity context. |
-| Azure Container Apps | Candidate | Candidate compute for API, MCP Server, Tool Service, and management workloads. |
+| Azure Container Apps | Selected | Separate public MCP Server and private Tool Services deployables preserve trust and identity boundaries. |
 | Virtual network and private endpoints | Candidate | Candidate private connectivity boundary for supported data services. |
-| Azure Blob Storage | Candidate | Candidate canonical-knowledge store under [ADR-0009](../../decisions/adr-0009-canonical-markdown-and-rebuildable-projections). |
+| Azure Blob Storage | Selected | Immutable canonical Markdown and referenced asset store under ADR-0022. |
 | Cosmos DB | Selected | Per-space transactional control metadata and change-set coordination. |
-| Azure AI Search | Candidate | Candidate derived retrieval projection. |
-| Observability service | Open | Service selection and retention are not decided. |
+| Azure AI Search | Selected | Hybrid derived retrieval projection under ADR-0022. |
+| Application Insights and Azure Monitor | Selected | OpenTelemetry is the application and infrastructure telemetry path; retention and alert thresholds remain environment-specific. |
 
 ## Explicitly not proposed
 
-This view does not propose an Azure region, subscription, resource group,
-environment tier, network address space, firewall policy, resource count,
+The pilot uses one deployment-configured Azure geography and accepts only
+non-sensitive synthetic or internal test data. This view does not select a
+region, subscription, resource group, network address space, firewall policy,
 scaling rule, or service-specific private-endpoint configuration.
 
 ## Open questions
 
-- Which Azure service coordinates long-running work (Q-24)?
-- Which regional, residency, classification, retention, and isolation
-  constraints apply (Q-21)?
-- Which observability service and audit-retention approach satisfy the
-  requirements?
+- Which Azure service coordinates long-running work after the synchronous thin
+  slice (Q-24)?
+- Which production residency, classification, retention, and isolation
+  constraints apply beyond the pilot boundary (Q-21)?
+- Which production observability retention, alert thresholds, and workbook
+  scopes satisfy the requirements?

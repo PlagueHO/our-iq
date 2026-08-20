@@ -35,6 +35,23 @@ pnpm validate
 - Do not present placeholders or proposals as implemented behavior.
 - Preserve source links and provenance for externally derived information.
 
+## Engineering principles
+
+- Prefer the simplest design that satisfies the current requirement.
+- Apply YAGNI: do not build speculative abstractions, extensibility, or
+  complexity before a real requirement justifies them.
+- Treat testability and readability as first-class design constraints.
+- Follow consistent naming, formatting, project structure, and terminology.
+- Prefer clean, self-documenting code over explanatory comments.
+- Keep methods and classes small and focused; avoid code smells and duplicated
+  logic.
+- Add concise comments only when they communicate complex intent that the code
+  cannot express clearly.
+- Start with the minimal use case and refactor toward complexity only when
+  evidence requires it.
+- Apply SOLID, KISS, DRY, separation of concerns, Domain-Driven Design, and
+  Onion Architecture without turning principles into unnecessary ceremony.
+
 ## Change checklist
 
 1. Keep changes focused and update the relevant documentation index.

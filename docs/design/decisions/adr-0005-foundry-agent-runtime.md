@@ -41,13 +41,15 @@ agents.
 
 ### Negative
 
-- NEG-001: Agent model deployments, prompt governance, and evaluation remain
-  unresolved.
+- NEG-001: Agent model deployments, prompt governance, and evaluation require
+  explicit versioning and promotion controls.
 
 ## Implementation notes
 
-- IMP-001: Model selection and agent evaluation strategy remain open; see Q-23
-  and NFR-0025.
+- IMP-001: [ADR-0024](adr-0024-domain-agent-capability-governance) resolves
+  model and prompt governance: prompt-based agents are preferred, immutable
+  definitions pin deployment configuration, and promotion uses the NFR-0025
+  evaluation gates.
 
 ## References
 

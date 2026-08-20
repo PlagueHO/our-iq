@@ -55,8 +55,10 @@ storage directly.
 | Client Agent host | External | Speaks Model Context Protocol to the Our IQ MCP Server |
 
 Cosmos DB is selected for control metadata and per-space transactional
-publication. The specific services for canonical storage, retrieval projection,
-long-running work, and observability remain open or Candidate directions.
+publication. Azure Blob Storage is selected for canonical revisions, and Azure
+AI Search is selected for the initial retrieval projection. Application Insights
+and Azure Monitor are selected for telemetry. Long-running work remains open
+beyond the synchronous thin slice.
 
 ## Context diagram
 
@@ -84,7 +86,7 @@ flowchart LR
   deployments
   Required"]
   azure["Azure platform services
-  Candidate selection"]
+  Selected initial services"]
 
   user -->|"Intent: contribute knowledge, ask questions"| client
   client -->|"Model Context Protocol

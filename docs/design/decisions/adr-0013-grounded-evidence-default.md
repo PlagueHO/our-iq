@@ -43,12 +43,15 @@ Synthesis into a narrative answer is an explicitly requested mode.
 
 ### Negative
 
-- NEG-001: Evidence and citation schemas need an explicit API-contract decision.
+- NEG-001: Evidence and citation schemas add canonical-read and freshness
+  verification work to every retrieval result.
 
 ## Implementation notes
 
-- IMP-001: Evidence shape, confidence, and completeness semantics remain open;
-  see Q-12.
+- IMP-001: The
+  [API contract baseline](../architecture/api-contract-baseline)
+  defines evidence, citation, freshness, and completeness semantics without a
+  model-generated numeric confidence score.
 
 ## References
 

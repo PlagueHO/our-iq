@@ -34,9 +34,15 @@ alternatives, and consequences.
 | Change-set visibility | [ADR-0015](../../decisions/adr-0015-transactional-change-set-visibility-fence) | Staged revisions become canonical through one committed manifest and pointer. |
 | Invocation context | [ADR-0016](../../decisions/adr-0016-immutable-execution-context-snapshots) | Agent work pins state and rejects stale mutations. |
 | Unattended authority | [ADR-0017](../../decisions/adr-0017-bounded-unattended-execution-grants) | Private tools validate immutable, bounded authorization grants. |
+| MCP compatibility | [ADR-0018](../../decisions/adr-0018-mcp-contract-boundaries-and-compatibility) | Public and private MCP contracts have separate compatibility boundaries. |
+| Space lifecycle | [ADR-0019](../../decisions/adr-0019-space-lifecycle-and-capabilities) | Operations use explicit state and capability gates. |
+| Content isolation | [ADR-0020](../../decisions/adr-0020-untrusted-content-isolation) | Content cannot alter instructions, tools, identity, or policy. |
+| Ontology persistence | [ADR-0021](../../decisions/adr-0021-ontology-version-persistence) | Immutable JSON ontology versions and active pointer share a Cosmos DB partition. |
+| Initial data plane | [ADR-0022](../../decisions/adr-0022-initial-azure-data-plane) | Blob Storage is canonical and Azure AI Search is derived. |
+| Application boundaries | [ADR-0023](../../decisions/adr-0023-dotnet-container-apps-boundaries) | Separate public and private .NET Container Apps preserve trust boundaries. |
+| Agent capabilities | [ADR-0024](../../decisions/adr-0024-domain-agent-capability-governance) | Three shared agents use fixed least-privilege tool manifests and pinned model configuration. |
 
 ## Open questions
 
-- Which service coordinates long-running work (Q-24)?
-- What model, prompt, and evaluation governance applies to the required agent
-  runtime (Q-23)?
+- Which service coordinates long-running work after the synchronous thin slice
+  (Q-24)?

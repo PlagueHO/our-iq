@@ -1,8 +1,8 @@
 ---
 title: Assumptions, open questions, and deferred items
 status: Proposed
-owner: TBD
-reviewers: TBD
+owner: "@PlagueHO"
+reviewers: "@PlagueHO"
 ---
 
 ## Assumptions, open questions, and deferred items
@@ -52,7 +52,7 @@ Record in the structural architecture slice.
 | C-18 | Access control uses a small fixed role set per knowledge space: Owner, Ontology Manager, Contributor, Reader. |
 | C-19 | The initial version targets Model Context Protocol specification `2026-07-28`, accepting the compatibility risk of a very new spec. |
 | C-20 | The initial version targets best-effort availability with no formal recovery point or recovery time objective. Revisit before a wider rollout. |
-| C-21 | Cosmos DB holds control metadata. Azure Blob Storage for canonical knowledge and Azure AI Search for retrieval remain Candidate directions, not deployed implementation claims. |
+| C-21 | Cosmos DB holds control metadata. Canonical and retrieval data services were initially Candidate directions and are selected for the first implementation by C-32 and C-33. |
 | C-22 | A per-space Cosmos DB transactional publication record is the visibility fence that makes staged immutable revisions canonical as one change set. |
 | C-23 | Every invocation uses an immutable execution-context snapshot that pins its governing state; stale mutations are rejected. |
 | C-24 | Unattended execution requires an immutable, bounded execution grant linked to an attended approval or space policy. |
@@ -60,6 +60,28 @@ Record in the structural architecture slice.
 | C-26 | A knowledge-space ontology may include optional example Markdown templates that guide agents but are not strict validation contracts. |
 | C-27 | Domain Agents use private deterministic MCP tools with schema-bound JSON contracts; public MCP consumers use only intent-level operations. |
 | C-28 | Attachments are immutable source assets linked through provenance and citations; supported extraction produces representations that agents may interpret into canonical Markdown knowledge. |
+| C-29 | The first validated increment creates and approves a minimal ontology, contributes one text item, and retrieves cited evidence end to end. |
+| C-30 | All knowledge and source content is untrusted data. Immutable instructions, fixed tool manifests, schema validation, provenance, output-policy checks, and fail-closed handling enforce the boundary. |
+| C-31 | Immutable ontology versions use canonical JSON with JSON Schema 2020-12 document contracts and are stored with a transactional active pointer in the space's Cosmos DB partition. |
+| C-32 | Immutable Markdown revisions use Azure Blob Storage; manifests and active pointers remain in Cosmos DB. |
+| C-33 | Azure AI Search supplies the initial hybrid retrieval projection; canonical Blob revisions supply returned evidence. |
+| C-34 | The implementation uses .NET and ASP.NET Core with separate public MCP Server and private Tool Services Azure Container Apps. |
+| C-35 | Ontology, Contribution, and Retrieval are separate shared, versioned Domain Agent definitions with fixed least-privilege tool manifests. |
+| C-36 | Ambiguous contribution returns `clarification_required` without a plan or mutation. Retrieval reports deterministic evidence and completeness without numeric confidence. |
+| C-37 | The first increment accepts UTF-8 text and Markdown only; binary attachment extraction is deferred. |
+| C-38 | The pilot permits only non-sensitive synthetic or internal test data in one configured Azure geography. |
+| C-39 | Prompt-based Foundry Agent Service agents are the default. Agent definitions pin model deployment configuration; promotion requires evaluation and owner approval. |
+| C-40 | Long-running migration, bootstrap, rebuild, and deletion orchestration is deferred beyond the synchronous thin slice. |
+| C-41 | The thin slice records p50 and p95 latency baselines; correctness and security gates are release-blocking before numeric performance budgets are set. |
+| C-42 | The implementation targets .NET 10 and ASP.NET Core, includes Microsoft Agent Framework for typed agent integration and explicit workflow composition, and centrally pins exact stable NuGet versions. |
+| C-43 | Infrastructure is authored in Bicep under `infra/` and provisioned through Azure Developer CLI using `azure.yaml`. |
+| C-44 | Microsoft Aspire is used for inner-loop orchestration and local service discovery, but Bicep and azd remain the deployment contract. |
+| C-45 | Frontends use React and ShadCN/UI. |
+| C-46 | Backend unit and component tests use MSTest and current Microsoft Testing Platform patterns. |
+| C-47 | Application and infrastructure observability uses OpenTelemetry with Application Insights and Azure Monitor. |
+| C-48 | Bicep modules, naming, monitoring, and delivery patterns from Libris Maleficarum are reused selectively after reviewing fit, security, and ownership boundaries. |
+| C-49 | Implementation prioritizes simplicity, YAGNI, KISS, testability, readability, naming consistency, clean code, short focused methods, and evidence-driven refactoring. |
+| C-50 | SOLID, DRY, separation of concerns, Domain-Driven Design, and Onion Architecture guide implementation pragmatically without unnecessary ceremony. |
 
 ## Assumptions
 
@@ -76,27 +98,13 @@ Record in the structural architecture slice.
 
 ## Open questions
 
-### Blocking the execution and domain model slice
+### Not blocking the first implementation increment
 
 | ID | Question |
 | --- | --- |
-| Q-07 | How is knowledge content prevented from influencing the instructions or permitted tool set of any agent that processes it? |
-
-### Blocking the API contract slice
-
-| ID | Question |
-| --- | --- |
-| Q-12 | What is the shape of an evidence item and its citation, and what confidence or completeness signals accompany it? |
-| Q-16 | Which private deterministic tool operations are required by each Domain Agent, and how are capabilities bound to agent definitions? |
-| Q-17 | What media types, extraction representations, size limits, and retention rules apply to source assets? |
-
-### Blocking quality targets and platform decisions
-
-| ID | Question |
-| --- | --- |
-| Q-21 | What data classification, residency, and retention constraints apply? |
+| Q-17 | After the text-only increment, what media types, extraction representations, size limits, and retention rules apply to source assets? |
+| Q-21 | What production data classification, residency, and retention constraints apply beyond the non-sensitive pilot boundary? |
 | Q-22 | What is the acceptable cost envelope per instance and per knowledge space? |
-| Q-23 | Which model deployments back each agent, and who governs prompt and model changes? |
 | Q-24 | Which service coordinates messaging or orchestration for long-running ontology and change-set jobs? |
 | Q-25 | What is the maximum size of a single canonical knowledge item? |
 
@@ -104,10 +112,11 @@ Record in the structural architecture slice.
 
 | ID | Question |
 | --- | --- |
-| Q-30 | Which single workflow should the first validated increment prove? |
-| Q-31 | What is the response when a contribution is ambiguous rather than invalid? |
-| Q-32 | Should typed relationships between knowledge items be validated against the ontology, or may they be arbitrary? |
 | Q-33 | What evidence would justify introducing retrieval across multiple knowledge spaces? |
+
+Q-07, Q-12, Q-16, Q-23, Q-30, Q-31, and Q-32 were resolved during issue #4
+reconciliation. Their outcomes are recorded as C-29 to C-50 and in ADR-0020 to
+ADR-0027.
 
 ## Deferred items
 
@@ -121,6 +130,9 @@ Record in the structural architecture slice.
 | D-06 | External identity federation beyond the instance tenant | No confirmed requirement |
 | D-07 | Public or anonymous read access | No confirmed requirement |
 | D-08 | A dedicated graph database as a projection | Only justified if relationship traversal proves inadequate over the primary projection |
+| D-09 | Binary attachment extraction in the first increment | Text and Markdown are sufficient to validate the end-to-end product bet |
+| D-10 | Long-running operation orchestration in the first increment | No selected thin-slice operation requires asynchronous orchestration |
+| D-11 | Hosted Foundry Agents by default | Prompt-based agents are preferred until a requirement demonstrates the need for custom hosted code |
 
 ## Related documents
 

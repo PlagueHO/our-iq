@@ -64,8 +64,8 @@ decisions.
 
 - NEG-001: Two distinct contract surfaces need independent authorization,
   documentation, and compatibility testing.
-- NEG-002: Private-tool discovery and agent capability binding need detailed
-  design before implementation.
+- NEG-002: Private-tool discovery and agent capability binding require
+  versioned manifests and compatibility testing.
 
 ## Implementation notes
 
@@ -76,12 +76,15 @@ decisions.
   context defined by [ADR-0016](adr-0016-immutable-execution-context-snapshots).
 - IMP-003: This ADR does not select a management API transport, storage SDK, or
   JSON Schema hosting mechanism.
+- IMP-004: [ADR-0024](adr-0024-domain-agent-capability-governance) binds the
+  initial private tools to versioned Ontology, Contribution, and Retrieval
+  Agent definitions.
 
 ## References
 
 - REF-001: [ADR-0002](adr-0002-agent-mediated-intent-interface).
 - REF-002: [ADR-0013](adr-0013-grounded-evidence-default).
-- REF-003: C-19, Q-12, Q-16, and Q-17 in
+- REF-003: C-19 and resolved Q-12 and Q-16 context, plus open Q-17, in
   [assumptions and open questions](../product/assumptions-and-open-questions).
 
 ## Review record

@@ -12,7 +12,8 @@ Describe important runtime scenarios and interactions.
 ## Runtime scenarios
 
 The detailed flows are [proposed agentic-execution behaviour](../agentic-execution-model).
-They apply accepted structural decisions but do not define public MCP contracts.
+They apply accepted structural decisions; public and private conventions are
+defined by the [API contract baseline](../api-contract-baseline).
 
 | Scenario | Runtime boundary | Detailed view |
 | --- | --- | --- |
@@ -25,9 +26,10 @@ They apply accepted structural decisions but do not define public MCP contracts.
 The change-set state diagram separates canonical commitment from projection
 work. The detailed logical model defines the validations applied before staging.
 
-## Open questions
+## Implementation boundary
 
-- Which scenario is the first validation target?
-- Which operations become asynchronous jobs and what service coordinates them?
-- What exact public errors surface stale snapshots, validation findings, and
-  grant denials?
+The first validation target is ontology approval, one attended text
+contribution, and one attended evidence query. The error taxonomy defines stale
+snapshots, validation, clarification, authorization, and grounding outcomes.
+Asynchronous migration, bootstrap, rebuild, and deletion flows remain deferred
+until a long-running orchestrator is selected.

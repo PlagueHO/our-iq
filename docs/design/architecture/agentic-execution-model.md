@@ -293,8 +293,10 @@ permitted-tool expectations.
 | Regression | Results are compared with the approved baseline for the same agent definition version. |
 
 Evaluation cases are governance artefacts, not a claim that a particular model
-or test framework has been selected. Model selection and prompt-governance
-ownership remain open.
+deployment has been selected. ADR-0024 defines model and prompt governance:
+each immutable agent definition pins its configured model deployment, and
+owner-approved promotion requires these gates. Implementation tests follow the
+MSTest baseline in ADR-0026.
 
 ## Worked execution outcomes
 
@@ -314,5 +316,8 @@ ownership remain open.
   defines canonical publication.
 - [ADR-0016](../decisions/adr-0016-immutable-execution-context-snapshots)
   defines invocation pinning.
-- Public request and response shapes, idempotency, errors, and the precise
-  evidence schema remain for the API-contract slice.
+- [ADR-0020](../decisions/adr-0020-untrusted-content-isolation) defines the
+  enforceable instruction/data boundary.
+- Public request and response conventions, idempotency, errors, evidence, and
+  agent tool manifests are defined in the
+  [API contract baseline](api-contract-baseline).
