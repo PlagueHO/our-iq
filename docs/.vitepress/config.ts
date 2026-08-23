@@ -32,6 +32,7 @@ export default defineConfig({
           { text: 'Product and requirements', link: '/design/product/' },
           { text: 'Architecture', link: '/design/architecture/' },
           { text: 'Decisions', link: '/design/decisions/' },
+          { text: 'V1 implementation backlog', link: '/design/implementation-backlog' },
           { text: 'Documentation skills', link: '/design/documentation-skills' }
         ]
       }

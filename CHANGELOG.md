@@ -10,3 +10,4 @@ and versions are intended to follow [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Initial repository and documentation scaffold.
+- Proposed dependency-ordered GitHub issue backlog for the V1 implementation.
