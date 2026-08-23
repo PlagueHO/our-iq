@@ -1,0 +1,16 @@
+{
+  "surface": "private",
+  "contractVersions": [
+    {
+      "contractVersion": "1.0",
+      "status": "supported",
+      "schemas": [
+        {
+          "schemaName": "private-deterministic-tools",
+          "assetPath": "contracts/private/v1.0/private-deterministic-tools.schema.json",
+          "sha256": "c356f016ded13c96694002dfeed4be3d5fbfe86359be858bb0d1914b6e3366ff"
+        }
+      ]
+    }
+  ]
+}

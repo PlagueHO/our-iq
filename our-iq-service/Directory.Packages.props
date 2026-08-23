@@ -6,6 +6,7 @@
   <ItemGroup>
     <!-- Test platform -->
     <PackageVersion Include="MSTest" Version="4.0.2" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.2.2" />
 
     <!-- MCP and agent orchestration -->
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />

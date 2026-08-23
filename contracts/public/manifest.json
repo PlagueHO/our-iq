@@ -1,0 +1,16 @@
+{
+  "surface": "public",
+  "contractVersions": [
+    {
+      "contractVersion": "1.0",
+      "status": "supported",
+      "schemas": [
+        {
+          "schemaName": "public-thin-slice",
+          "assetPath": "contracts/public/v1.0/public-thin-slice.schema.json",
+          "sha256": "e42d77929e572fd9c8a9db208973760990958df1c50e30541f218bded709af14"
+        }
+      ]
+    }
+  ]
+}

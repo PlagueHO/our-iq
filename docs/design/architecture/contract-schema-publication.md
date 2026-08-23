@@ -71,6 +71,23 @@ refer to the same surface, version, and schema name. Digests are checked after
 packaging so a changed or substituted asset cannot be served as the declared
 schema.
 
+## Initial V1 repository assets
+
+The first versioned repository bundles are now present for compatibility-test
+consumption:
+
+| Surface | Contract version | Schema |
+| --- | --- | --- |
+| Public | `1.0` | `contracts/public/v1.0/public-thin-slice.schema.json` |
+| Private | `1.0` | `contracts/private/v1.0/private-deterministic-tools.schema.json` |
+
+The public schema covers the initial space setup, ontology approval,
+contribution, change-plan approval, and query envelopes. The private schema
+covers the initial Ontology, Contribution, and Retrieval Agent tool manifests,
+including their shared identity, execution-context, and state requirements.
+These are pre-GA repository assets; the public MCP resource resolver and
+private Tool Services runtime packaging remain follow-up implementation work.
+
 ## Version and compatibility policy
 
 Contract versions are scoped to a surface and use `major.minor` form. Package
