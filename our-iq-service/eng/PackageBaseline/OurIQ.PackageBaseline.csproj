@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Agents.AI" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Agents.AI.Foundry" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" PrivateAssets="all" />
+    <PackageReference Include="Azure.Identity" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" PrivateAssets="all" />
+    <PackageReference Include="Azure.Storage.Blobs" PrivateAssets="all" />
+    <PackageReference Include="Azure.Search.Documents" PrivateAssets="all" />
+    <PackageReference Include="Aspire.Microsoft.Azure.Cosmos" PrivateAssets="all" />
+    <PackageReference Include="Aspire.Azure.Storage.Blobs" PrivateAssets="all" />
+    <PackageReference Include="Aspire.Azure.Search.Documents" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

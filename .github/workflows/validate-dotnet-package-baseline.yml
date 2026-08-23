@@ -1,0 +1,36 @@
+name: Validate .NET package baseline
+
+on:
+  pull_request:
+    paths:
+      - 'our-iq-service/**'
+      - '.github/workflows/validate-dotnet-package-baseline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    name: Restore package baseline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: our-iq-service/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('our-iq-service/**/*.csproj', 'our-iq-service/**/*.props', 'our-iq-service/**/*.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore package baseline
+        shell: pwsh
+        run: ./our-iq-service/eng/Verify-PackageBaseline.ps1

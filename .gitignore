@@ -118,6 +118,7 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 .artifacts/
+/our-iq-service/.nuget/
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
