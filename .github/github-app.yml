@@ -1,6 +1,5 @@
-instructions:
-  - path: AGENTS.md
-  - path: .github/copilot-instructions.md
+instructions: |
+  Read AGENTS.md and .github/copilot-instructions.md before changing files.
 scripts:
   - name: 'docs: dev'
     command: pnpm docs:dev
