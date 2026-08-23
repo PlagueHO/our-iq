@@ -3,6 +3,7 @@
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
     <ProjectReference Include="..\OurIQ.Contracts\OurIQ.Contracts.csproj" />
+    <ProjectReference Include="..\OurIQ.Observability\OurIQ.Observability.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\OurIQ.McpServer\OurIQ.McpServer.csproj" />
+    <ProjectReference Include="..\..\src\OurIQ.Observability\OurIQ.Observability.csproj" />
     <ProjectReference Include="..\..\src\OurIQ.ToolServices\OurIQ.ToolServices.csproj" />
   </ItemGroup>
 
