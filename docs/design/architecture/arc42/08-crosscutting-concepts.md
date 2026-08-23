@@ -86,12 +86,45 @@ Projection failure must not roll back or corrupt committed canonical state.
 Audit retention, data classification, residency, recovery-copy expiry, and
 private-connectivity controls follow
 [ADR-0030](../../decisions/adr-0030-pilot-data-governance-and-retention-controls);
-the selected telemetry service, alerting thresholds, and implementation evidence
-remain open.
+
+### Implemented host-boundary telemetry
+
+The V1-F07 thin slice instruments the public MCP Server and private Tool
+Services ASP.NET hosts through a shared observability library. Each request
+creates an internal OpenTelemetry activity, records request count and duration
+metrics, and writes structured request-completion and request-failure logs. The
+activity and logging scope carry only the allow-listed execution, correlation,
+knowledge-space, operation, and W3C trace identifiers. The middleware does not
+inspect request bodies or emit prompts, source text, canonical knowledge, tokens,
+or secrets.
+
+The following safe identifiers are accepted from request headers and returned
+on the response:
+
+- `X-OurIQ-Execution-Id`
+- `X-OurIQ-Correlation-Id`
+- `X-OurIQ-Space-Id`
+- `X-OurIQ-Operation-Id`
+
+Values are limited to ASCII letters, digits, `.`, `_`, `:`, and `-`, with a
+maximum length of 128 characters. Invalid or missing execution and correlation
+values are replaced with generated identifiers; space and operation values are
+optional. W3C `traceparent` remains the trace-context propagation mechanism.
+`TelemetryContext.ApplyTo(HttpRequestMessage)` provides the same safe
+identifier propagation for future host-to-host calls without copying request
+content.
+
+Azure Monitor/Application Insights export is enabled when
+`APPLICATIONINSIGHTS_CONNECTION_STRING` is supplied through deployment
+configuration. Without that setting, hosts still emit in-process OpenTelemetry
+signals and remain suitable for local development and component tests without
+an external telemetry service.
 
 ## Deferred questions
 
 - How do grant issuance, revocation, and limit accounting appear in the eventual
   management contract?
-- Which telemetry service, alert thresholds, and workbook scopes satisfy the
+- Which alert thresholds, retention settings, and workbook scopes satisfy the
   accepted governance policy?
+- How should downstream Domain Agent, data-access, audit, and projection
+  operations add spans once those dependent increments are implemented?

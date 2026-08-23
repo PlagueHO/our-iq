@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\OurIQ.Contracts\OurIQ.Contracts.csproj" />
     <ProjectReference Include="..\..\src\OurIQ.Domain\OurIQ.Domain.csproj" />
+    <ProjectReference Include="..\..\src\OurIQ.Observability\OurIQ.Observability.csproj" />
   </ItemGroup>
 
   <ItemGroup>

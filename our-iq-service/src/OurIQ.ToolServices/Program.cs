@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using ModelContextProtocol.Server;
+using OurIQ.Observability;
 using OurIQ.ToolServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddOurIQTelemetry(builder.Configuration);
 builder.Services
     .AddMcpServer()
     .WithHttpTransport()
@@ -29,6 +31,7 @@ builder.Services.AddSingleton<IManagementAccessValidator, DenyManagementAccessVa
 
 var app = builder.Build();
 
+app.UseMiddleware<TelemetryContextMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
