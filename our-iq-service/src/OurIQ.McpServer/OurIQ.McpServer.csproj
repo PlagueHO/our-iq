@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
     <ProjectReference Include="..\OurIQ.Contracts\OurIQ.Contracts.csproj" />
   </ItemGroup>
 

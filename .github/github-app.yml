@@ -10,6 +10,12 @@ scripts:
     command: pnpm lint:md
   - name: 'docs: validate'
     command: pnpm validate
+  - name: '.NET: unit tests'
+    command: dotnet test .\our-iq-service\tests\OurIQ.UnitTests\OurIQ.UnitTests.csproj
+  - name: '.NET: component tests'
+    command: dotnet test .\our-iq-service\tests\OurIQ.ComponentTests\OurIQ.ComponentTests.csproj
+  - name: '.NET: all tests'
+    command: dotnet test .\our-iq-service\OurIQ.slnx
 automation:
   auto_issue_session: true
   remote_control: true
