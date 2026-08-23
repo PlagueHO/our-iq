@@ -1,0 +1,796 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-iq.dev/contracts/public/v1.0/public-thin-slice",
+  "title": "Our IQ public thin-slice contract",
+  "description": "Versioned request and response envelopes for the initial public MCP operation subset.",
+  "type": "object",
+  "required": [
+    "contractVersion",
+    "operation",
+    "request",
+    "response"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "1.0"
+    },
+    "operation": {
+      "type": "string",
+      "enum": [
+        "create_space",
+        "submit_space_setup",
+        "approve_ontology",
+        "contribute_knowledge",
+        "approve_change_plan",
+        "query_knowledge"
+      ]
+    },
+    "request": {
+      "type": "object"
+    },
+    "response": {
+      "type": "object"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "operation": {
+          "const": "create_space"
+        },
+        "request": {
+          "$ref": "#/$defs/createSpaceRequest"
+        },
+        "response": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/errorResponse"
+            },
+            {
+              "$ref": "#/$defs/createSpaceResponse"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operation": {
+          "const": "submit_space_setup"
+        },
+        "request": {
+          "$ref": "#/$defs/submitSpaceSetupRequest"
+        },
+        "response": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/errorResponse"
+            },
+            {
+              "$ref": "#/$defs/submitSpaceSetupResponse"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operation": {
+          "const": "approve_ontology"
+        },
+        "request": {
+          "$ref": "#/$defs/approveOntologyRequest"
+        },
+        "response": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/errorResponse"
+            },
+            {
+              "$ref": "#/$defs/approveOntologyResponse"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operation": {
+          "const": "contribute_knowledge"
+        },
+        "request": {
+          "$ref": "#/$defs/contributeKnowledgeRequest"
+        },
+        "response": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/errorResponse"
+            },
+            {
+              "$ref": "#/$defs/contributeKnowledgeResponse"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operation": {
+          "const": "approve_change_plan"
+        },
+        "request": {
+          "$ref": "#/$defs/approveChangePlanRequest"
+        },
+        "response": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/errorResponse"
+            },
+            {
+              "$ref": "#/$defs/approveChangePlanResponse"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "operation": {
+          "const": "query_knowledge"
+        },
+        "request": {
+          "$ref": "#/$defs/queryKnowledgeRequest"
+        },
+        "response": {
+          "$ref": "#/$defs/queryKnowledgeResponse"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "$defs": {
+    "opaqueId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "userIdentity": {
+      "type": "object",
+      "required": [
+        "initiatingUserId"
+      ],
+      "properties": {
+        "initiatingUserId": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
+    },
+    "notApplicablePagination": {
+      "const": "notApplicable"
+    },
+    "errorResponse": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "knowledgeSpaceId",
+        "correlationId",
+        "pagination",
+        "error"
+      ],
+      "properties": {
+        "outcome": {
+          "const": "error"
+        },
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "pagination": {
+          "$ref": "#/$defs/notApplicablePagination"
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "category",
+            "message",
+            "remediation"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "authentication_required",
+                "authorization_denied",
+                "space_state_conflict",
+                "ontology_not_active",
+                "validation_failed",
+                "policy_rejected",
+                "insufficient_grounding",
+                "clarification_required",
+                "partial_plan",
+                "approval_expired",
+                "replan_required",
+                "idempotency_key_conflict",
+                "asset_unsupported",
+                "operation_not_cancellable"
+              ]
+            },
+            "category": {
+              "type": "string",
+              "enum": [
+                "authentication",
+                "authorization",
+                "conflict",
+                "validation",
+                "policy",
+                "grounding",
+                "state"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "remediation": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "createSpaceRequest": {
+      "type": "object",
+      "required": [
+        "displayName",
+        "idempotencyKey",
+        "identity"
+      ],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotencyKey": {
+          "$ref": "#/$defs/idempotencyKey"
+        },
+        "identity": {
+          "$ref": "#/$defs/userIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "createSpaceResponse": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "knowledgeSpaceId",
+        "state",
+        "operationId",
+        "correlationId",
+        "pagination"
+      ],
+      "properties": {
+        "outcome": {
+          "const": "accepted"
+        },
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "state": {
+          "const": "draft"
+        },
+        "operationId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "pagination": {
+          "$ref": "#/$defs/notApplicablePagination"
+        }
+      },
+      "additionalProperties": false
+    },
+    "submitSpaceSetupRequest": {
+      "type": "object",
+      "required": [
+        "knowledgeSpaceId",
+        "ontology",
+        "idempotencyKey",
+        "identity"
+      ],
+      "properties": {
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ontology": {
+          "type": "object",
+          "required": [
+            "ontologyId",
+            "ontologyVersionId"
+          ],
+          "properties": {
+            "ontologyId": {
+              "$ref": "#/$defs/opaqueId"
+            },
+            "ontologyVersionId": {
+              "$ref": "#/$defs/opaqueId"
+            }
+          },
+          "additionalProperties": true
+        },
+        "idempotencyKey": {
+          "$ref": "#/$defs/idempotencyKey"
+        },
+        "identity": {
+          "$ref": "#/$defs/userIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "submitSpaceSetupResponse": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "knowledgeSpaceId",
+        "state",
+        "planId",
+        "correlationId",
+        "pagination"
+      ],
+      "properties": {
+        "outcome": {
+          "const": "plan_ready"
+        },
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "state": {
+          "const": "pending"
+        },
+        "planId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "pagination": {
+          "$ref": "#/$defs/notApplicablePagination"
+        }
+      },
+      "additionalProperties": false
+    },
+    "approveOntologyRequest": {
+      "type": "object",
+      "required": [
+        "knowledgeSpaceId",
+        "ontologyVersionId",
+        "approval",
+        "idempotencyKey",
+        "identity"
+      ],
+      "properties": {
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "approval": {
+          "type": "object",
+          "required": [
+            "decision"
+          ],
+          "properties": {
+            "decision": {
+              "const": "approve"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "idempotencyKey": {
+          "$ref": "#/$defs/idempotencyKey"
+        },
+        "identity": {
+          "$ref": "#/$defs/userIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "approveOntologyResponse": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "knowledgeSpaceId",
+        "state",
+        "ontologyVersionId",
+        "correlationId",
+        "pagination"
+      ],
+      "properties": {
+        "outcome": {
+          "const": "accepted"
+        },
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "state": {
+          "const": "active"
+        },
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "pagination": {
+          "$ref": "#/$defs/notApplicablePagination"
+        }
+      },
+      "additionalProperties": false
+    },
+    "contributeKnowledgeRequest": {
+      "type": "object",
+      "required": [
+        "knowledgeSpaceId",
+        "content",
+        "idempotencyKey",
+        "identity"
+      ],
+      "properties": {
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "content": {
+          "type": "object",
+          "anyOf": [
+            {
+              "required": [
+                "text"
+              ]
+            },
+            {
+              "required": [
+                "attachments"
+              ]
+            }
+          ],
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "attachments": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "sourceAssetId",
+                  "mediaType",
+                  "displayName"
+                ],
+                "properties": {
+                  "sourceAssetId": {
+                    "$ref": "#/$defs/opaqueId"
+                  },
+                  "mediaType": {
+                    "const": "text/markdown"
+                  },
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "hints": {
+          "type": "object",
+          "properties": {
+            "possibleDocumentTypes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/opaqueId"
+              }
+            },
+            "possibleRelatedKnowledgeItemIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/opaqueId"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "idempotencyKey": {
+          "$ref": "#/$defs/idempotencyKey"
+        },
+        "identity": {
+          "$ref": "#/$defs/userIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "contributeKnowledgeResponse": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "knowledgeSpaceId",
+        "correlationId",
+        "pagination"
+      ],
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "no_change",
+            "clarification_required",
+            "plan_ready",
+            "partial_plan",
+            "replan_required"
+          ]
+        },
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "planId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "pagination": {
+          "$ref": "#/$defs/notApplicablePagination"
+        }
+      },
+      "additionalProperties": false
+    },
+    "approveChangePlanRequest": {
+      "type": "object",
+      "required": [
+        "knowledgeSpaceId",
+        "planId",
+        "approval",
+        "idempotencyKey",
+        "identity"
+      ],
+      "properties": {
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "planId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "approval": {
+          "type": "object",
+          "required": [
+            "decision"
+          ],
+          "properties": {
+            "decision": {
+              "enum": [
+                "approve",
+                "reject"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "idempotencyKey": {
+          "$ref": "#/$defs/idempotencyKey"
+        },
+        "identity": {
+          "$ref": "#/$defs/userIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "approveChangePlanResponse": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "knowledgeSpaceId",
+        "correlationId",
+        "pagination"
+      ],
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "rejected",
+            "confirmed",
+            "committed"
+          ]
+        },
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "changeSetId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "pagination": {
+          "$ref": "#/$defs/notApplicablePagination"
+        }
+      },
+      "additionalProperties": false
+    },
+    "queryKnowledgeRequest": {
+      "type": "object",
+      "required": [
+        "knowledgeSpaceId",
+        "query",
+        "pagination",
+        "identity"
+      ],
+      "properties": {
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filters": {
+          "type": "object",
+          "properties": {
+            "documentType": {
+              "type": "string"
+            },
+            "metadata": {
+              "type": "object"
+            },
+            "relationship": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": true
+        },
+        "pagination": {
+          "type": "object",
+          "required": [
+            "pageSize"
+          ],
+          "properties": {
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          "additionalProperties": false
+        },
+        "identity": {
+          "$ref": "#/$defs/userIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "queryKnowledgeResponse": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "knowledgeSpaceId",
+        "completeness",
+        "evidence",
+        "pagination",
+        "correlationId"
+      ],
+      "properties": {
+        "outcome": {
+          "const": "completed"
+        },
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "insufficient"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "knowledgeItemId",
+              "revisionId",
+              "title",
+              "excerpt",
+              "citation"
+            ],
+            "properties": {
+              "knowledgeItemId": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "revisionId": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "excerpt": {
+                "type": "string"
+              },
+              "citation": {
+                "type": "object",
+                "required": [
+                  "revisionDigest",
+                  "locator"
+                ],
+                "properties": {
+                  "revisionDigest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "locator": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "required": [
+            "pageSize",
+            "nextCursor"
+          ],
+          "properties": {
+            "pageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "nextCursor": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

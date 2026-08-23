@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="MSTest" />
+    <PackageReference Include="JsonSchema.Net" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,6 +19,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\OurIQ.Contracts\OurIQ.Contracts.csproj" />
     <ProjectReference Include="..\..\src\OurIQ.Domain\OurIQ.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\..\contracts\**\*" Link="contracts\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

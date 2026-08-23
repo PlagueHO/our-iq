@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-iq.dev/contracts/private/v1.0/private-deterministic-tools",
+  "title": "Our IQ private deterministic tool contract",
+  "description": "Versioned request envelope for authorized Domain Agent deterministic tools.",
+  "type": "object",
+  "required": [
+    "contractVersion",
+    "operation",
+    "knowledgeSpaceId",
+    "identity",
+    "executionContext"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "1.0"
+    },
+    "operation": {
+      "type": "string",
+      "enum": [
+        "get_space",
+        "list_spaces",
+        "transition_space",
+        "get_ontology",
+        "list_all_templates",
+        "get_template",
+        "stage_ontology_version",
+        "validate_ontology_compatibility",
+        "activate_ontology_version",
+        "stage_source_asset",
+        "get_source_asset",
+        "get_extraction_result",
+        "get_canonical_snapshot",
+        "validate_change_plan",
+        "stage_knowledge_revisions",
+        "commit_change_set",
+        "get_change_set",
+        "search_evidence",
+        "read_canonical_evidence",
+        "create_operation",
+        "get_operation",
+        "cancel_operation",
+        "authorize_capability",
+        "record_approval",
+        "validate_execution_grant"
+      ]
+    },
+    "knowledgeSpaceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "identity": {
+      "type": "object",
+      "required": [
+        "initiatingUserId",
+        "actingAgentId",
+        "agentDefinitionVersion",
+        "requiredCapability"
+      ],
+      "properties": {
+        "initiatingUserId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actingAgentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agentDefinitionVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "requiredCapability": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "executionContext": {
+      "type": "object",
+      "required": [
+        "executionId",
+        "traceId",
+        "correlationId",
+        "knowledgeSpaceId",
+        "lifecycleState",
+        "ontologyVersion",
+        "ontologyDigest",
+        "mutationPolicy",
+        "canonicalHeadVersion"
+      ],
+      "properties": {
+        "executionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "traceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "knowledgeSpaceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lifecycleState": {
+          "enum": [
+            "draft",
+            "pending",
+            "active",
+            "readonly",
+            "maintenance",
+            "retired"
+          ]
+        },
+        "ontologyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ontologyDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "mutationPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonicalHeadVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "arguments": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}
