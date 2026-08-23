@@ -41,6 +41,7 @@ alternatives, and consequences.
 | Initial data plane | [ADR-0022](../../decisions/adr-0022-initial-azure-data-plane) | Blob Storage is canonical and Azure AI Search is derived. |
 | Application boundaries | [ADR-0023](../../decisions/adr-0023-dotnet-container-apps-boundaries) | Separate public and private .NET Container Apps preserve trust boundaries. |
 | Agent capabilities | [ADR-0024](../../decisions/adr-0024-domain-agent-capability-governance) | Three shared agents use fixed least-privilege tool manifests and pinned model configuration. |
+| Pilot topology | [ADR-0029](../../decisions/adr-0029-pilot-network-and-environment-topology) | One non-production VNet-integrated Container Apps environment separates external MCP ingress from internal Tool Services and private data paths. |
 
 ## Open questions
 

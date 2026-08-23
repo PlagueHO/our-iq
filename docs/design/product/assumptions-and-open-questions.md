@@ -84,6 +84,7 @@ Record in the structural architecture slice.
 | C-50 | SOLID, DRY, separation of concerns, Domain-Driven Design, and Onion Architecture guide implementation pragmatically without unnecessary ceremony. |
 | C-51 | Public and private JSON Schemas are repository-owned, surface-separated, versioned assets packaged as immutable runtime bundles and resolved by exact contract version. |
 | C-52 | Until `1.0` is published and a formal GA release is declared, any contract may change incompatibly without a backward-compatibility or deprecation guarantee. |
+| C-53 | The pilot uses one non-production VNet-integrated Azure Container Apps environment, external ingress only for the public MCP Server, internal ingress for Tool Services and management, and private endpoints for supported canonical and projection data services. |
 
 ## Assumptions
 

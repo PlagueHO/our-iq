@@ -63,8 +63,9 @@ surface.
   reliability evidence justifies another deployable.
 - IMP-002: MCP uses streamable HTTP; dedicated health endpoints are separate
   from MCP endpoints.
-- IMP-003: Network topology and production private-endpoint coverage remain
-  deployment design decisions.
+- IMP-003: The pilot network topology is defined by
+  [ADR-0029](adr-0029-pilot-network-and-environment-topology); production
+  private-endpoint coverage remains a later deployment design decision.
 - IMP-004: [ADR-0025](adr-0025-dotnet-technology-and-package-baseline) defines
   the .NET target, Agent Framework integration boundary, and package policy.
 
