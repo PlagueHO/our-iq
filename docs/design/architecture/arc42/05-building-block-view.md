@@ -48,7 +48,7 @@ tools. This distinction preserves
 | Canonical Markdown and front matter | Authoritative | Immutable Azure Blob revisions, governed writes, atomic change sets, versioning, provenance |
 | Control metadata | Authoritative | Cosmos DB records governance, grants, and per-space change-set coordination |
 | Azure AI Search projection | Derived and rebuildable | May lag canonical commits; never determines canonical truth |
-| Audit and observability records | Operational evidence | Retention and service selection remain open |
+| Audit and observability records | Operational evidence | Audit separation, data minimization, and retention follow ADR-0030; service selection remains open |
 
 ## Deferred questions
 

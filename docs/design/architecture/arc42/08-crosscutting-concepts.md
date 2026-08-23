@@ -83,11 +83,15 @@ output-policy checks, and fail-closed handling enforce that boundary. See
 Requests, agent invocations, Tool Service work, change sets, projection work,
 and long-running operations require traceability and diagnosability.
 Projection failure must not roll back or corrupt committed canonical state.
-Specific telemetry services, alerting, audit retention, and recovery targets
+Audit retention, data classification, residency, recovery-copy expiry, and
+private-connectivity controls follow
+[ADR-0030](../../decisions/adr-0030-pilot-data-governance-and-retention-controls);
+the selected telemetry service, alerting thresholds, and implementation evidence
 remain open.
 
 ## Deferred questions
 
 - How do grant issuance, revocation, and limit accounting appear in the eventual
   management contract?
-- Which production telemetry and audit-retention controls satisfy Q-21?
+- Which telemetry service, alert thresholds, and workbook scopes satisfy the
+  accepted governance policy?

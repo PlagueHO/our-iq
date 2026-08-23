@@ -91,7 +91,7 @@ The environment tiers are intentionally small:
 | Public ingress for Tool Services with application-level filtering | Rejected because a filtering mistake would expose deterministic private tools and management operations. |
 | Public data-service endpoints for the pilot | Rejected because private endpoints provide a smaller pilot trust boundary for canonical, control, and retrieval data. |
 | Separate Container Apps environments for every logical Tool Service | Rejected because ADR-0023 defers deployable decomposition until scaling, security, or reliability evidence justifies it. |
-| Production-grade multi-environment topology | Deferred because Q-21 leaves production classification, residency, retention, and isolation requirements open. |
+| Production-grade multi-environment topology | Deferred because the pilot topology is intentionally small; ADR-0030 now defines governance admission controls, while production topology and availability details remain future work. |
 
 ## Consequences
 
@@ -128,7 +128,9 @@ The environment tiers are intentionally small:
   deployment preview before implementation is treated as ready.
 - IMP-004: Production private-link coverage, firewall policy, egress control,
   telemetry isolation, retention, residency, RPO, RTO, and availability targets
-  remain outside this pilot decision and require Q-21 or later decisions.
+  remain outside this pilot decision. Data governance and retention are defined
+  by ADR-0030; the remaining production topology and availability details require
+  later decisions and implementation evidence.
 
 ## References
 

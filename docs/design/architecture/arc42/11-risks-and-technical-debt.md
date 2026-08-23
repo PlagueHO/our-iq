@@ -18,7 +18,7 @@ Make material architecture risks, uncertainties, and deferred work visible.
 | New MCP or prerelease SDK behaviour changes | Contract or build churn | Medium | Pin versions, run compatibility tests, and use ADR-0018 deprecation rules | Project owner | Open |
 | Cosmos DB hot partition or item-size constraints | Failed publication or ontology storage at larger scale | Low at pilot scale | Pilot limits, per-space partitioning, and measured item sizes | Project owner | Accepted for pilot |
 | Prompt-based Foundry agents cannot satisfy required orchestration | Rework to Hosted Agents | Medium | Evaluate the three prompt-based agents against thin-slice gates before introducing hosted code | Project owner | Open |
-| Production compliance controls are undefined | Unsafe use with sensitive data | High if scope expands | Enforce the non-sensitive pilot boundary until Q-21 is resolved | Project owner | Scope constrained |
+| Production compliance controls lack implementation evidence | Unsafe use with sensitive data | High if scope expands | Enforce the non-sensitive pilot boundary and require the ADR-0030 admission checklist before production data | Project owner | Governance defined; evidence required |
 | Long-running orchestration is unselected | Migration, rebuild, bootstrap, and deletion cannot ship | High for full release | Explicitly defer those flows beyond the synchronous thin slice and resolve Q-24 before implementing them | Project owner | Deferred blocker |
 
 ## Evidence needed

@@ -42,6 +42,7 @@ alternatives, and consequences.
 | Application boundaries | [ADR-0023](../../decisions/adr-0023-dotnet-container-apps-boundaries) | Separate public and private .NET Container Apps preserve trust boundaries. |
 | Agent capabilities | [ADR-0024](../../decisions/adr-0024-domain-agent-capability-governance) | Three shared agents use fixed least-privilege tool manifests and pinned model configuration. |
 | Pilot topology | [ADR-0029](../../decisions/adr-0029-pilot-network-and-environment-topology) | One non-production VNet-integrated Container Apps environment separates external MCP ingress from internal Tool Services and private data paths. |
+| Data governance and retention | [ADR-0030](../../decisions/adr-0030-pilot-data-governance-and-retention-controls) | Production admission requires declared classification, geography-constrained copies, bounded retention, governed audit evidence, and private data paths. |
 
 ## Open questions
 

@@ -106,7 +106,6 @@ Record in the structural architecture slice.
 | ID | Question |
 | --- | --- |
 | Q-17 | After the text-only increment, what media types, extraction representations, size limits, and retention rules apply to source assets? |
-| Q-21 | What production data classification, residency, and retention constraints apply beyond the non-sensitive pilot boundary? |
 | Q-22 | What is the acceptable cost envelope per instance and per knowledge space? |
 | Q-24 | Which service coordinates messaging or orchestration for long-running ontology and change-set jobs? |
 | Q-25 | What is the maximum size of a single canonical knowledge item? |
@@ -116,6 +115,12 @@ Record in the structural architecture slice.
 | ID | Question |
 | --- | --- |
 | Q-33 | What evidence would justify introducing retrieval across multiple knowledge spaces? |
+
+## Resolved questions
+
+| ID | Resolution |
+| --- | --- |
+| Q-21 | [ADR-0030](../decisions/adr-0030-pilot-data-governance-and-retention-controls) defines the production governance baseline, measurable NFR targets, required data-service and private-connectivity controls, and the pilot-to-production admission gate. |
 
 Q-07, Q-12, Q-16, Q-23, Q-30, Q-31, and Q-32 were resolved during issue #4
 reconciliation. Their outcomes are recorded as C-29 to C-50 and in ADR-0020 to

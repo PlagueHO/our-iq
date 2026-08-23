@@ -84,15 +84,16 @@ non-sensitive single-geography restriction.
 
 **Acceptance criteria:**
 
-- An accepted ADR or requirements update resolves Q-21 and sets measurable
-  targets for NFR-0005, NFR-0007, and NFR-0008.
+- Accepted [ADR-0030](decisions/adr-0030-pilot-data-governance-and-retention-controls)
+  resolves Q-21 and sets measurable targets for NFR-0005, NFR-0007, and
+  NFR-0008.
 - The decision identifies required controls for Blob Storage, Cosmos DB, Azure
   AI Search, telemetry, backups, and private connectivity.
 - Migration from the pilot boundary is described without claiming that the
   controls are deployed.
 
 **Depends on:** None.  
-**Traceability:** Q-21; NFR-0005, NFR-0007, NFR-0008; ADR-0026.
+**Traceability:** Q-21; NFR-0005, NFR-0007, NFR-0008; ADR-0026; ADR-0030.
 
 ### V1-D02: Set item-size and cost budgets
 
@@ -163,12 +164,14 @@ endpoint choices needed for deployable Bicep.
 - Public MCP ingress and private Tool Services ingress are explicitly separated.
 - Supported service-to-service and data-service paths are documented with their
   identities and trust boundaries.
-- Pilot data-service private endpoints and the boundary for intentionally
-  deferred production network controls are documented.
-- Environment tiers and intentionally deferred production controls are clear.
+- Pilot data-service private endpoints and the boundary for remaining
+  production topology controls are documented.
+- Environment tiers, the ADR-0030 governance admission gate, and intentionally
+  deferred production implementation work are clear.
 
 **Depends on:** `V1-D01` may refine, but does not block, the pilot topology.  
-**Traceability:** ADR-0023, ADR-0029; arc42 deployment view, C-53, Q-21.
+**Traceability:** ADR-0023, ADR-0029, ADR-0030; arc42 deployment view, C-53,
+Q-21 (resolved).
 
 ### V1-D06: Define post-thin-slice source asset support
 

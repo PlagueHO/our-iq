@@ -70,5 +70,5 @@ flows. A projection may lag a canonical commit and is never authoritative.
   measurements?
 - Is a dedicated graph projection justified after Azure AI Search relationship
   filtering is evaluated (D-08)?
-- Which selected services require private endpoints under future production
-  network constraints (Q-21)?
+- Which selected services require additional private-connectivity controls under
+  the production policy in ADR-0030?
