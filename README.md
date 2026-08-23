@@ -4,10 +4,12 @@ Our IQ is a proposed team-level, project-level, or organizational MCP
 knowledge server for creating and maintaining a shared, repository-backed
 knowledge store: a governed second brain for teams and their work.
 
-This repository is currently a design and documentation scaffold with a
-reproducible .NET package baseline. It does not yet provide an MCP server, an
-application, an Azure deployment, or a final storage, indexing,
-authentication, or retrieval architecture.
+This repository contains design and documentation plus a reproducible .NET
+public MCP host scaffold. The host exposes the public streamable HTTP boundary
+and health endpoint, but its intent tools do not yet implement domain behavior.
+The repository does not yet provide a complete knowledge server, an Azure
+deployment, or a final storage, indexing, authentication, or retrieval
+architecture.
 
 ## Documentation
 
@@ -46,12 +48,13 @@ deployment architecture.
 | `pnpm docs:preview` | Preview the production documentation build. |
 | `pnpm lint:md` | Lint Markdown files. |
 | `pnpm validate` | Run the documentation lint and build checks. |
+| `dotnet test .\our-iq-service\OurIQ.slnx` | Run the .NET unit and component tests. |
 | `.\our-iq-service\eng\Verify-PackageBaseline.ps1 -Clean` | Restore the centrally pinned .NET package baseline from a clean local cache. |
 
-The package baseline requires the .NET 10 SDK selected by
-`our-iq-service/global.json`. It validates package resolution only; solution,
-application, test, and Aspire AppHost projects are introduced in subsequent
-foundation work.
+The .NET projects target the .NET 10 SDK selected by
+`our-iq-service/global.json`. The package baseline remains separately
+reproducible, while the public host and test projects are introduced through
+the V1 foundation work.
 
 ## Contributing
 
