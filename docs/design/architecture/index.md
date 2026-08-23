@@ -12,4 +12,5 @@ views continue to distinguish design from deployed behaviour.
 - [Logical knowledge model](logical-knowledge-model)
 - [Ontology storage contract](ontology-storage-contract)
 - [API contract baseline](api-contract-baseline)
+- [Contract schema publication](contract-schema-publication)
 - [Initial implementation readiness](implementation-readiness)

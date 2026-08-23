@@ -36,12 +36,15 @@ validation contracts. Required ontology rules remain the only template-adjacent
 mechanism that blocks change-set commitment.
 
 Long-running work is represented as monitored operations. MCP Apps remain
-deferred and must not be required to complete a public operation. Additive
-contract changes are backward compatible. A breaking change requires a new
-major contract version and support for the immediately preceding minor version
-through its published deprecation window. The window lasts at least one minor
-version. Exact transport and schema-hosting mechanics remain implementation
-decisions.
+deferred and must not be required to complete a public operation. Until Our IQ
+publishes `1.0` and declares a formal GA release, contract changes may be
+breaking and do not carry a backward-compatibility or deprecation guarantee.
+After the 1.0 GA release, additive contract changes are backward compatible. A
+breaking change requires a new major contract version and support for the
+immediately preceding minor version through its published deprecation window.
+The window lasts at least one minor version. Exact transport and schema-hosting
+mechanics for management APIs remain implementation decisions; contract schema
+publication is defined by [ADR-0028](adr-0028-contract-schema-publication).
 
 ## Alternatives considered
 
@@ -74,8 +77,9 @@ decisions.
   [API contract baseline](../architecture/api-contract-baseline).
 - IMP-002: A state-sensitive private tool validates the immutable execution
   context defined by [ADR-0016](adr-0016-immutable-execution-context-snapshots).
-- IMP-003: This ADR does not select a management API transport, storage SDK, or
-  JSON Schema hosting mechanism.
+- IMP-003: This ADR does not select a management API transport or storage SDK.
+  [ADR-0028](adr-0028-contract-schema-publication) selects the contract schema
+  publication mechanism.
 - IMP-004: [ADR-0024](adr-0024-domain-agent-capability-governance) binds the
   initial private tools to versioned Ontology, Contribution, and Retrieval
   Agent definitions.

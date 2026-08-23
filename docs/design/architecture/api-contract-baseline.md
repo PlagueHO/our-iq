@@ -50,10 +50,18 @@ Every operation contract must specify:
 | Collection access | Cursor pagination, stable ordering, filters, and page-size limits; state `not applicable` for non-collection operations. |
 
 Responses use camelCase JSON property names. Stable identifiers are opaque
-strings. Timestamps use RFC 3339 UTC strings. The final identifier syntax and
-schema publication mechanism remain implementation decisions. Each operation
-below is a proposed normative contract entry; a surface marked Deferred is not
-part of the initial implementation contract.
+strings. Timestamps use RFC 3339 UTC strings. Contract schema publication and
+exact-version resolution follow the
+[contract schema publication reference](contract-schema-publication) and
+[ADR-0028](../decisions/adr-0028-contract-schema-publication). The final
+identifier syntax remains an implementation decision. Each operation below is
+a proposed normative contract entry; a surface marked Deferred is not part of
+the initial implementation contract.
+
+Until `1.0` has been published and a formal GA release has been declared, these
+contracts may change incompatibly without a compatibility or deprecation
+guarantee. The post-GA versioning and support policy is defined by
+[ADR-0018](../decisions/adr-0018-mcp-contract-boundaries-and-compatibility).
 
 ## Knowledge-space lifecycle
 
@@ -118,7 +126,7 @@ knowledge space.
 | Tool | `approve_change_plan` | Policy-authorized role; `active` | Returns rejection, confirmation, or committed change set; no collection. |
 | Tool | `query_knowledge` | Reader; `active`, `readonly`, or `maintenance` as policy permits | Returns cited evidence; supports `documentType`, `metadata`, and `relationship` filters, descending relevance order, cursor, and requested page size. |
 | Tool | `bootstrap_knowledge` | Contributor; `draft`, `pending`, or `maintenance` | Returns monitored bootstrap operation; no collection. |
-| Resource | Space, ontology, plan, operation, and evidence references | Corresponding read capability and state | Singular resources have no pagination; list resources use stable identifier order, cursor, filters, and requested page size. |
+| Resource | Space, ontology, plan, operation, evidence, and public contract schema references | Corresponding read capability and state | Singular resources have no pagination; list resources use stable identifier order, cursor, filters, and requested page size. Contract schemas resolve by exact public version; private schemas are never public resources. |
 | Prompt | Contribution, ontology-design, and retrieval guidance | No data access | Static guidance; no pagination. |
 | Task | Provisioning, migration, projection rebuild, and bulk bootstrap | Operation-specific capability and state | Returns operation resource with progress and terminal outcome; no collection. |
 | MCP App | Visual review, graph, or status views | N/A | Deferred because host support is not required for an operation. |
@@ -262,6 +270,9 @@ in general:
 | `idempotency_key_conflict` | Key was reused with different input. | Use a new key. |
 | `asset_unsupported` | The asset type or extraction capability is unsupported. | Provide a supported source or preserve for later processing. |
 | `operation_not_cancellable` | Cancellation would be unsafe at the current operation stage. | Wait for terminal outcome. |
+| `contract_version_unsupported` | The requested contract version is not published or supported. | Select a declared supported version. |
+| `contract_schema_not_found` | The requested schema is not present in the selected surface and version. | Check the schema name or contract version. |
+| `contract_schema_integrity_failure` | The published schema does not match its declared digest. | Fail closed and report the publication integrity issue. |
 
 `partial_plan` is the only partial-planning result: it names each incomplete
 source and never authorizes unsupported conclusions. `approval_expired` is the
@@ -385,6 +396,4 @@ implementation. Later release flows retain these additional contract needs:
 
 - Which binary source-asset media types, extraction outputs, retention rules,
   and size limits are supported after the text-only increment?
-- Which transport and publication mechanism hosts public and private JSON
-  Schemas?
 - Which orchestrator implements monitored long-running operations?
