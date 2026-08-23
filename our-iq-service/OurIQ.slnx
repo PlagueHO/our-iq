@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OurIQ.Contracts/OurIQ.Contracts.csproj" />
+    <Project Path="src/OurIQ.Domain/OurIQ.Domain.csproj" />
+    <Project Path="src/OurIQ.McpServer/OurIQ.McpServer.csproj" />
+    <Project Path="src/OurIQ.ToolServices/OurIQ.ToolServices.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OurIQ.ComponentTests/OurIQ.ComponentTests.csproj" />
+    <Project Path="tests/OurIQ.UnitTests/OurIQ.UnitTests.csproj" />
+  </Folder>
+</Solution>
