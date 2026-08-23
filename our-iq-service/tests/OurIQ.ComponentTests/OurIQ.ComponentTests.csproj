@@ -9,7 +9,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" />
     <PackageReference Include="MSTest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OurIQ.Domain\OurIQ.Domain.csproj" />
+    <ProjectReference Include="..\..\src\OurIQ.ToolServices\OurIQ.ToolServices.csproj" />
   </ItemGroup>
 
   <ItemGroup>
