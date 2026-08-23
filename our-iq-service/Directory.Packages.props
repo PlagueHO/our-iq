@@ -4,6 +4,9 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Test platform -->
+    <PackageVersion Include="MSTest" Version="4.0.2" />
+
     <!-- MCP and agent orchestration -->
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
     <PackageVersion Include="Microsoft.Agents.AI" Version="1.13.0" />
