@@ -22,6 +22,95 @@ public static class KnowledgeSpaceLifecycleStates
             or Deleted;
 }
 
+public static class KnowledgeSpaceRoles
+{
+    public const string Owner = "Owner";
+    public const string OntologyManager = "Ontology Manager";
+}
+
+public sealed record KnowledgeSpaceLifecycleTransition(
+    string FromState,
+    string ToState,
+    IReadOnlyList<string> RequiredRoles);
+
+public static class KnowledgeSpaceLifecycleTransitions
+{
+    private static readonly IReadOnlyList<KnowledgeSpaceLifecycleTransition> DefinedTransitions =
+        Array.AsReadOnly(
+        [
+            new(
+                KnowledgeSpaceLifecycleStates.Draft,
+                KnowledgeSpaceLifecycleStates.Pending,
+                [KnowledgeSpaceRoles.Owner, KnowledgeSpaceRoles.OntologyManager]),
+            new(
+                KnowledgeSpaceLifecycleStates.Pending,
+                KnowledgeSpaceLifecycleStates.Active,
+                [KnowledgeSpaceRoles.OntologyManager]),
+            new(
+                KnowledgeSpaceLifecycleStates.Active,
+                KnowledgeSpaceLifecycleStates.Readonly,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Active,
+                KnowledgeSpaceLifecycleStates.Maintenance,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Active,
+                KnowledgeSpaceLifecycleStates.Retired,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Readonly,
+                KnowledgeSpaceLifecycleStates.Active,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Readonly,
+                KnowledgeSpaceLifecycleStates.Maintenance,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Readonly,
+                KnowledgeSpaceLifecycleStates.Retired,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Maintenance,
+                KnowledgeSpaceLifecycleStates.Active,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Maintenance,
+                KnowledgeSpaceLifecycleStates.Readonly,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Maintenance,
+                KnowledgeSpaceLifecycleStates.Retired,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Retired,
+                KnowledgeSpaceLifecycleStates.Deleting,
+                [KnowledgeSpaceRoles.Owner]),
+            new(
+                KnowledgeSpaceLifecycleStates.Deleting,
+                KnowledgeSpaceLifecycleStates.Deleted,
+                [KnowledgeSpaceRoles.Owner])
+        ]);
+
+    private static readonly IReadOnlyDictionary<(string FromState, string ToState), KnowledgeSpaceLifecycleTransition>
+        TransitionsByState = DefinedTransitions.ToDictionary(
+            transition => (transition.FromState, transition.ToState));
+
+    public static IReadOnlyList<KnowledgeSpaceLifecycleTransition> All => DefinedTransitions;
+
+    public static KnowledgeSpaceLifecycleTransition GetRequiredTransition(
+        string currentState,
+        string targetState)
+    {
+        if (TransitionsByState.TryGetValue((currentState, targetState), out var transition))
+        {
+            return transition;
+        }
+
+        throw new KnowledgeSpaceStateConflictException(currentState, targetState);
+    }
+}
+
 public sealed record KnowledgeSpaceCreation(
     string DisplayName,
     string MutationPolicy,
@@ -105,6 +194,18 @@ public sealed record KnowledgeSpaceControlRecord
         }
     }
 
+    public KnowledgeSpaceControlRecord TransitionTo(string targetState)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetState);
+        Validate();
+        _ = KnowledgeSpaceLifecycleTransitions.GetRequiredTransition(LifecycleState, targetState);
+
+        return this with
+        {
+            LifecycleState = targetState
+        };
+    }
+
     private static void ValidateRequired(string? value, string name)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -127,4 +228,17 @@ public sealed class KnowledgeSpaceControlRecordConflictException(
     public string KnowledgeSpaceId { get; } = knowledgeSpaceId;
 
     public string ExpectedETag { get; } = expectedETag;
+}
+
+public sealed class KnowledgeSpaceStateConflictException(
+    string currentState,
+    string targetState)
+    : InvalidOperationException(
+        $"The transition from '{currentState}' to '{targetState}' is not permitted.")
+{
+    public const string Code = "space_state_conflict";
+
+    public string CurrentState { get; } = currentState;
+
+    public string TargetState { get; } = targetState;
 }
