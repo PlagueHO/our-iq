@@ -82,6 +82,8 @@ Record in the structural architecture slice.
 | C-48 | Bicep modules, naming, monitoring, and delivery patterns from Libris Maleficarum are reused selectively after reviewing fit, security, and ownership boundaries. |
 | C-49 | Implementation prioritizes simplicity, YAGNI, KISS, testability, readability, naming consistency, clean code, short focused methods, and evidence-driven refactoring. |
 | C-50 | SOLID, DRY, separation of concerns, Domain-Driven Design, and Onion Architecture guide implementation pragmatically without unnecessary ceremony. |
+| C-51 | Public and private JSON Schemas are repository-owned, surface-separated, versioned assets packaged as immutable runtime bundles and resolved by exact contract version. |
+| C-52 | Until `1.0` is published and a formal GA release is declared, any contract may change incompatibly without a backward-compatibility or deprecation guarantee. |
 
 ## Assumptions
 
