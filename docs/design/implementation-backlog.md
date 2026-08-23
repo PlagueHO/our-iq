@@ -163,10 +163,12 @@ endpoint choices needed for deployable Bicep.
 - Public MCP ingress and private Tool Services ingress are explicitly separated.
 - Supported service-to-service and data-service paths are documented with their
   identities and trust boundaries.
+- Pilot data-service private endpoints and the boundary for intentionally
+  deferred production network controls are documented.
 - Environment tiers and intentionally deferred production controls are clear.
 
 **Depends on:** `V1-D01` may refine, but does not block, the pilot topology.  
-**Traceability:** ADR-0023; arc42 deployment view, open questions.
+**Traceability:** ADR-0023, ADR-0029; arc42 deployment view, C-53, Q-21.
 
 ### V1-D06: Define post-thin-slice source asset support
 

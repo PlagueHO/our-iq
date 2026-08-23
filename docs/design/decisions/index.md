@@ -38,6 +38,7 @@ authoritative; this register is navigational.
 | ADR-0026 | [Implementation platform and delivery conventions](adr-0026-implementation-platform-and-delivery-conventions) | Accepted | 2026-08-20 |
 | ADR-0027 | [Simplicity and code quality principles](adr-0027-simplicity-and-code-quality-principles) | Accepted | 2026-08-20 |
 | ADR-0028 | [Contract schema publication](adr-0028-contract-schema-publication) | Accepted | 2026-08-23 |
+| ADR-0029 | [Pilot network and environment topology](adr-0029-pilot-network-and-environment-topology) | Accepted | 2026-08-23 |
 
 ## Template
 

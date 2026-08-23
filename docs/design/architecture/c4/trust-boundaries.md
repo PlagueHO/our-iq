@@ -7,9 +7,10 @@ status: Proposed
 
 ## Purpose
 
-Show the public, agent-runtime, private application, data, management, and
-observability boundaries. This `Proposed` view describes desired controls; it
-does not describe a deployed network or security configuration.
+Show the pilot public, agent-runtime, private application, data, management, and
+observability boundaries. This `Proposed` view describes the selected pilot
+shape and desired controls; it does not describe a deployed network or security
+configuration.
 
 ```mermaid
 flowchart LR
@@ -18,17 +19,21 @@ flowchart LR
   foundry[Microsoft Foundry Agent Service<br/>Required runtime]
   operator[Steward or operator]
 
-  subgraph public[Public boundary]
-    mcp[Our IQ MCP Server<br/>Intent-level MCP tools only]
-  end
-
   subgraph agent[Agent-runtime boundary]
     domain[Ontology, Contribution, Retrieval Agents<br/>Fixed tool manifests]
   end
 
-  subgraph private[Private application boundary]
-    tools[Our IQ Tool Services<br/>Service managed identities]
-    management[Management APIs<br/>Privileged deterministic correction]
+  subgraph pilotnet[Pilot virtual network]
+    subgraph public[External ingress boundary]
+      mcp[Our IQ MCP Server<br/>Intent-level MCP tools only]
+    end
+
+    subgraph private[Internal application boundary]
+      tools[Our IQ Tool Services<br/>Service managed identities]
+      management[Management APIs<br/>Privileged deterministic correction]
+    end
+
+    pe[Private endpoints<br/>Blob, Cosmos DB, Azure AI Search]
   end
 
   subgraph data[Private data boundary]
@@ -45,11 +50,13 @@ flowchart LR
   mcp -->|user and agent authorization context| entra
   mcp -->|private invocation| domain
   domain -->|runs on| foundry
-  domain -->|private tools| tools
+  domain -->|private service integration| tools
   operator -->|privileged management path| management
   management --> tools
-  tools -->|managed-identity access| canonical
-  tools -->|managed-identity access| control
+  tools -->|managed identity| pe
+  pe --> canonical
+  pe --> control
+  pe --> projection
   canonical -. rebuild .-> projection
   mcp -. trace .-> audit
   domain -. trace .-> audit
@@ -61,12 +68,22 @@ flowchart LR
 
 | Boundary | Permitted flow | Constraint |
 | --- | --- | --- |
-| Public | Client Agent to public intent MCP tools | No public document or ontology CRUD. |
+| External ingress | Client Agent to public intent MCP tools | The MCP Server is the only externally reachable application surface; no public document or ontology CRUD. |
 | Agent runtime | MCP Server to Domain Agents; Domain Agents to private Tool Services | Immutable instructions and fixed tool manifests cannot be altered by content. |
-| Private application | Tool and management operations to data dependencies | Tool Services use their own managed identities. |
-| Data | Canonical and control writes; projection rebuilds | Canonical writes are atomic, versioned change sets; projections are non-authoritative. |
-| Management | Privileged correction or removal of an identified document | Subject to policy, authorization, versioning, and audit. |
+| Internal application | Tool and management operations to private data dependencies | Tool Services and management have internal ingress only; Tool Services use their own managed identities. |
+| Data | Canonical and control writes; projection rebuilds through private endpoints | Canonical writes are atomic, versioned change sets; projections are non-authoritative. |
+| Management | Privileged correction or removal of an identified document through internal ingress | Subject to policy, authorization, versioning, and audit. |
 | Observability | Traces, metrics, logs, and audit evidence from every major flow | Retention, service, and alert rules remain open. |
+
+## Pilot environment boundary
+
+The pilot defines local Aspire orchestration and one non-production Azure
+environment as its environment tiers. The Azure environment uses one
+VNet-integrated Container Apps environment, an application subnet, and a
+private-endpoint subnet. Subscription, geography, address spaces, and CIDRs are
+deployment parameters. Production environments and stronger classification,
+residency, retention, egress, and availability controls remain deferred under
+Q-21.
 
 ## Deferred questions
 

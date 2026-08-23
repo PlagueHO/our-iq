@@ -10,7 +10,7 @@ behaviour.
 - [System context](system-context)
 - [Container](container)
 - [Trust boundaries and data flow](trust-boundaries)
-- [Initial Azure deployment](azure-deployment)
+- [Pilot Azure deployment](azure-deployment)
 - [Component](component) - proposed public orchestration, change-set,
   retrieval, and ontology-lifecycle responsibilities.
 - [Agentic execution model](../agentic-execution-model) - detailed runtime,
