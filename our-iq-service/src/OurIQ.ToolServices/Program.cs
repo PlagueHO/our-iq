@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Azure.Cosmos;
 using ModelContextProtocol.Server;
 using OurIQ.Observability;
 using OurIQ.ToolServices;
@@ -7,6 +8,17 @@ using OurIQ.ToolServices;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOurIQTelemetry(builder.Configuration);
+builder.AddAzureCosmosClient(
+    "cosmos",
+    _ => { },
+    options =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            options.ConnectionMode = ConnectionMode.Gateway;
+        }
+    });
+builder.Services.AddKnowledgeSpacePersistence(builder.Configuration);
 builder.Services
     .AddMcpServer()
     .WithHttpTransport()
