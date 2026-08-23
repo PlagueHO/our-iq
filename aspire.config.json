@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "our-iq-service/src/OurIQ.AppHost/OurIQ.AppHost.csproj"
+  }
+}

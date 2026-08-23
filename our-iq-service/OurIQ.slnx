@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/OurIQ.AppHost/OurIQ.AppHost.csproj" />
     <Project Path="src/OurIQ.Contracts/OurIQ.Contracts.csproj" />
     <Project Path="src/OurIQ.Domain/OurIQ.Domain.csproj" />
     <Project Path="src/OurIQ.McpServer/OurIQ.McpServer.csproj" />
