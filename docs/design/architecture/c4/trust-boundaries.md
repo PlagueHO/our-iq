@@ -43,7 +43,7 @@ flowchart LR
   end
 
   subgraph observability[Observability boundary]
-    audit[Audit, logs, metrics, and traces<br/>Service selection open]
+    audit[Audit, logs, metrics, and traces<br/>Governed by ADR-0030]
   end
 
   client -->|authenticated intent| mcp
@@ -73,7 +73,7 @@ flowchart LR
 | Internal application | Tool and management operations to private data dependencies | Tool Services and management have internal ingress only; Tool Services use their own managed identities. |
 | Data | Canonical and control writes; projection rebuilds through private endpoints | Canonical writes are atomic, versioned change sets; projections are non-authoritative. |
 | Management | Privileged correction or removal of an identified document through internal ingress | Subject to policy, authorization, versioning, and audit. |
-| Observability | Traces, metrics, logs, and audit evidence from every major flow | Retention, service, and alert rules remain open. |
+| Observability | Traces, metrics, logs, and audit evidence from every major flow | Audit policy, data minimization, and retention follow ADR-0030; service and alert rules remain implementation work. |
 
 ## Pilot environment boundary
 
@@ -81,13 +81,11 @@ The pilot defines local Aspire orchestration and one non-production Azure
 environment as its environment tiers. The Azure environment uses one
 VNet-integrated Container Apps environment, an application subnet, and a
 private-endpoint subnet. Subscription, geography, address spaces, and CIDRs are
-deployment parameters. Production environments and stronger classification,
-residency, retention, egress, and availability controls remain deferred under
-Q-21.
+deployment parameters. Production environments remain future work and require
+the classification, residency, retention, audit, backup, and private-connectivity
+evidence defined by ADR-0030.
 
 ## Deferred questions
 
-- What storage and retention controls apply to audit and observability data
-  (Q-21)?
 - How are grant issuance, revocation, and execution limits represented in the
   eventual management contract?

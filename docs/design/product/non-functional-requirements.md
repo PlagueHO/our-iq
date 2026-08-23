@@ -15,7 +15,10 @@ from implementation technology.
 This document is `Proposed`. Each requirement states a quality attribute, a
 measurement method, and a scope. Targets are marked `TBD` where scale, policy,
 or cost input is not yet available; the requirement is still stated so a target
-can be attached without restructuring the register.
+can be attached without restructuring the register. The governance targets for
+NFR-0005, NFR-0007, and NFR-0008 are the accepted baseline in
+[ADR-0030](../decisions/adr-0030-pilot-data-governance-and-retention-controls);
+the requirement status remains `Proposed` until implementation evidence exists.
 
 ## Requirement format
 
@@ -36,10 +39,10 @@ Status: Proposed
 | NFR-0002 | Authorization | No operation succeeds that exceeds the intersection of user permissions and acting agent capabilities. | Zero unauthorized successes | Proposed |
 | NFR-0003 | Least privilege | Each service component holds only the platform permissions required for its own responsibilities. | Verified per component | Proposed |
 | NFR-0004 | Auditability | Security-relevant and knowledge-changing operations produce immutable audit records. | 100% of such operations | Proposed |
-| NFR-0005 | Audit retention | Audit records are retained for a defined period. | TBD | Proposed |
+| NFR-0005 | Audit retention | Audit records are retained for a defined period. | At least 365 days for 100% of audit records; diagnostic telemetry defaults to no more than 30 days | Proposed |
 | NFR-0006 | Encryption | Knowledge is encrypted in transit and at rest. | All stores and transports | Proposed |
-| NFR-0007 | Data classification | Each knowledge space declares the classification of the content it may hold, and the system enforces the resulting handling constraints. | TBD | Proposed |
-| NFR-0008 | Data residency | Knowledge remains within a declared geography. | TBD | Proposed |
+| NFR-0007 | Data classification | Each knowledge space declares the classification of the content it may hold, and the system enforces the resulting handling constraints. | 100% of spaces have a classification before activation; zero writes exceed the declared policy; pilot data is non-sensitive synthetic or internal test data | Proposed |
+| NFR-0008 | Data residency | Knowledge remains within a declared geography. | 100% of knowledge, projections, backups, and recovery copies remain within the deployment's approved geography set; zero unapproved cross-geography copies or exports | Proposed |
 | NFR-0009 | Content safety | Contributed content and generated output are screened against a defined safety policy. | TBD | Proposed |
 | NFR-0010 | Untrusted content | Knowledge content is treated as untrusted input to any agent that processes it, and cannot alter that agent's instructions or permitted tool set. | Zero successful instruction injections | Proposed |
 
@@ -160,8 +163,8 @@ exists.
 
 ## Open questions
 
-- What data classification will knowledge spaces be permitted to hold?
-- What residency and retention constraints apply?
+- Which additional regulated or restricted classifications, if any, should a
+  later decision authorize?
 - What is the acceptable cost envelope per instance and per knowledge space?
 - What is the maximum size of a single canonical knowledge item?
 

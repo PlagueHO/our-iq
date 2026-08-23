@@ -62,7 +62,7 @@ flowchart LR
 | Azure Blob Storage | Selected | Immutable canonical Markdown and referenced asset store under ADR-0022. |
 | Cosmos DB | Selected | Per-space transactional control metadata and change-set coordination. |
 | Azure AI Search | Selected | Hybrid derived retrieval projection under ADR-0022. |
-| Application Insights and Azure Monitor | Selected | OpenTelemetry is the application and infrastructure telemetry path; retention and alert thresholds remain environment-specific. |
+| Application Insights and Azure Monitor | Selected | OpenTelemetry is the application and infrastructure telemetry path; retention, data minimization, and audit separation follow ADR-0030, while service-specific thresholds remain environment-specific. |
 
 ## Pilot topology
 
@@ -85,14 +85,13 @@ The pilot uses one deployment-configured Azure geography and accepts only
 non-sensitive synthetic or internal test data. This view does not select a
 region, subscription, resource group, network address space, production firewall
 or egress policy, scaling rule, telemetry isolation, or production
-private-endpoint coverage. The selected pilot shape does not claim that an Azure
-environment has been deployed.
+private-endpoint coverage. ADR-0030 defines production governance and admission
+evidence, but the selected pilot shape does not claim that an Azure environment
+has been deployed.
 
 ## Open questions
 
 - Which Azure service coordinates long-running work after the synchronous thin
   slice (Q-24)?
-- Which production residency, classification, retention, and stronger isolation
-  constraints apply beyond the pilot boundary (Q-21)?
 - Which production observability retention, alert thresholds, and workbook
   scopes satisfy the requirements?

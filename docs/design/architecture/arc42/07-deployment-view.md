@@ -17,9 +17,11 @@ claiming implementation.
 
 Microsoft Azure is required by CON-08. Microsoft Foundry Agent Service is the
 required runtime for Domain Agents. Microsoft Entra provides required identity
-constraints. ADR-0022, ADR-0023, ADR-0025, and ADR-0026 select the initial compute, data,
-delivery, and observability direction. Network and production operational
-controls remain proposed.
+constraints. ADR-0022, ADR-0023, ADR-0025, and ADR-0026 select the initial
+compute, data, delivery, and observability direction. Production governance
+controls are defined by
+[ADR-0030](../../decisions/adr-0030-pilot-data-governance-and-retention-controls);
+deployment and implementation evidence remain proposed.
 
 | Boundary or node | Role | Status |
 | --- | --- | --- |
@@ -79,15 +81,14 @@ the dependency access identities. This follows
 The pilot uses one deployment-configured Azure geography and accepts only
 non-sensitive synthetic or internal test data. Local Aspire orchestration is the
 inner-loop tier. The Azure pilot is one parameterized non-production environment.
-Production is a separate future tier; its classification, residency, retention,
-network isolation, and availability controls remain open under Q-21.
+Production is a separate future tier. Its admission requires the classification,
+residency, retention, audit, backup, and private-connectivity evidence defined by
+ADR-0030; this view does not claim that the production tier exists.
 
 ## Open questions
 
 - Which Azure service coordinates long-running-work orchestration after the
   synchronous thin slice (Q-24)?
-- Which production residency, classification, retention, and stronger
-  network-isolation controls apply beyond the pilot boundary (Q-21)?
 - Which production observability retention, alert thresholds, and workbook
   scopes satisfy the requirements?
 - Which components require separate scaling, deployment, or availability

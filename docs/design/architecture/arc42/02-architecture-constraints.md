@@ -61,16 +61,19 @@ constrain later design.
 | CON-42 | Knowledge content is untrusted input wherever an agent processes it. | CON-04, CON-05 |
 | CON-43 | Every operation targeting a knowledge space must identify that space explicitly. | CON-09 |
 
-## Open constraints
+## Governance constraints
 
-These may become mandatory once the corresponding question is answered.
+The following constraints are mandatory for production admission. The pilot
+remains limited to one deployment-configured geography and non-sensitive
+synthetic or internal test data. The authoritative policy and evidence gate are
+defined in [ADR-0030](../../decisions/adr-0030-pilot-data-governance-and-retention-controls).
 
-| Candidate constraint | Blocking question | Status |
+| Constraint | Source | Status |
 | --- | --- | --- |
-| Production data residency and allowed geographies | Q-21 | Open beyond the single-geography pilot |
-| Production data classification limits per knowledge space | Q-21 | Open beyond the non-sensitive pilot |
-| Audit retention period | Q-21 | Open |
-| Production network isolation requirements between components | Q-21 | Open |
+| Classification declared before activation; no writes exceed the declared policy | ADR-0030 | Required before production admission |
+| Knowledge, projections, backups, and recovery copies remain within an approved geography set | ADR-0030 | Required before production admission |
+| Audit records retained for at least 365 days; diagnostic telemetry defaults to no more than 30 days | ADR-0030 | Required before production admission |
+| Supported data services use private connectivity with public access disabled and no public fallback | ADR-0030 | Required before production admission |
 | Cost envelope per instance | Q-22 | Open |
 
 `CON-09` is amended: the initial version targets pilot scale (one team, under
