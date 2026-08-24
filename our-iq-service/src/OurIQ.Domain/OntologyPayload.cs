@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Json.Schema;
 
 namespace OurIQ.Domain;
 
@@ -112,6 +113,34 @@ public sealed record OntologyPayload
                 throw new OntologyPayloadValidationException(
                     $"The front-matter schema for document type '{documentType.DocumentTypeId}' must be a JSON object.");
             }
+
+            ValidateFrontMatterSchema(documentType);
+        }
+    }
+
+    private static void ValidateFrontMatterSchema(OntologyDocumentType documentType)
+    {
+        var schemaVersion = documentType.FrontMatterSchema.TryGetProperty("$schema", out var schemaProperty)
+            ? schemaProperty.GetString()
+            : null;
+
+        if (!string.Equals(
+                schemaVersion,
+                "https://json-schema.org/draft/2020-12/schema",
+                StringComparison.Ordinal))
+        {
+            throw new OntologyPayloadValidationException(
+                $"The front-matter schema for document type '{documentType.DocumentTypeId}' must declare JSON Schema 2020-12.");
+        }
+
+        try
+        {
+            _ = JsonSchema.FromText(documentType.FrontMatterSchema.GetRawText());
+        }
+        catch (Exception exception) when (exception is JsonException or JsonSchemaException)
+        {
+            throw new OntologyPayloadValidationException(
+                $"The front-matter schema for document type '{documentType.DocumentTypeId}' is not a valid JSON Schema 2020-12 document.");
         }
     }
 

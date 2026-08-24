@@ -138,10 +138,13 @@ Before staging, Tool Services validate:
 
 1. Envelope and payload identities match.
 1. The payload conforms to the ontology storage schema.
+1. Each document type front-matter schema declares JSON Schema 2020-12 and
+   compiles as a valid schema document.
 1. Document type, relationship, rule, and filter paths use unique stable
    identifiers.
 1. Every referenced document type, metadata path, and template resolves.
-1. Every Required rule has deterministic validation semantics.
+1. Every rule violation produces a deterministic finding; Required findings
+   block staging, while Recommended and Informational findings do not.
 1. The computed payload digest matches the envelope.
 
 Before activation, Tool Services also require an approved compatibility
