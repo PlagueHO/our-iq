@@ -142,14 +142,15 @@ public sealed class KnowledgeSpaceCapabilityAuthorizationTests
         Assert.Throws<KnowledgeSpaceControlRecordValidationException>(
             () => record.GrantRole("owner-001", "member-001", "Administrator"));
         Assert.Throws<KnowledgeSpaceControlRecordValidationException>(
-            () => record with
-            {
-                RoleGrants =
-                [
-                    new KnowledgeSpaceRoleGrant("member-001", KnowledgeSpaceRoles.Reader),
-                    new KnowledgeSpaceRoleGrant("member-001", KnowledgeSpaceRoles.Reader)
-                ]
-            }.Validate());
+            () => (record with
+                {
+                    RoleGrants =
+                    [
+                        new KnowledgeSpaceRoleGrant("member-001", KnowledgeSpaceRoles.Reader),
+                        new KnowledgeSpaceRoleGrant("member-001", KnowledgeSpaceRoles.Reader)
+                    ]
+                })
+                .Validate());
     }
 
     [TestMethod]

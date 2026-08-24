@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" />
     <PackageReference Include="MSTest" />
     <PackageReference Include="JsonSchema.Net" />
   </ItemGroup>
@@ -20,6 +21,7 @@
     <ProjectReference Include="..\..\src\OurIQ.Contracts\OurIQ.Contracts.csproj" />
     <ProjectReference Include="..\..\src\OurIQ.Domain\OurIQ.Domain.csproj" />
     <ProjectReference Include="..\..\src\OurIQ.Observability\OurIQ.Observability.csproj" />
+    <ProjectReference Include="..\..\src\OurIQ.ToolServices\OurIQ.ToolServices.csproj" />
   </ItemGroup>
 
   <ItemGroup>

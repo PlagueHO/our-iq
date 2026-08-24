@@ -34,7 +34,8 @@ public sealed class TelemetryComponentTests
     [TestMethod]
     public async Task PublicHostEmitsTraceAndPropagatesCorrelationIdentifiers()
     {
-        using var factory = new WebApplicationFactory<McpServerProgram>();
+        using var factory = new WebApplicationFactory<McpServerProgram>()
+            .WithTestAuthentication();
         using var client = factory.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, "/health");
         request.Headers.Add(TelemetryConstants.ExecutionIdHeader, "execution-public");
@@ -66,7 +67,8 @@ public sealed class TelemetryComponentTests
     [TestMethod]
     public async Task PrivateHostGeneratesMissingCorrelationIdentifiers()
     {
-        using var factory = new WebApplicationFactory<ToolServicesProgram>();
+        using var factory = new WebApplicationFactory<ToolServicesProgram>()
+            .WithTestAuthentication();
         using var client = factory.CreateClient();
 
         using var response = await client.GetAsync("/health");

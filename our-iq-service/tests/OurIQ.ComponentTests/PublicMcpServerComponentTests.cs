@@ -2,7 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace OurIQ.ComponentTests;
 
@@ -15,7 +19,18 @@ public sealed class PublicMcpServerComponentTests
     [ClassInitialize]
     public static void ClassInitialize(TestContext _)
     {
-        _factory = new WebApplicationFactory<McpServerProgram>();
+        _factory = CreateAuthenticatedFactory();
+    }
+
+    [TestMethod]
+    public async Task PublicMcpRequiresAnAuthenticatedUser()
+    {
+        using var client = _factory.CreateClient();
+        using var request = CreateMcpHttpRequest(InitializeRequest());
+
+        using var response = await client.SendAsync(request);
+
+        Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [ClassCleanup]
@@ -33,6 +48,26 @@ public sealed class PublicMcpServerComponentTests
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         Assert.AreEqual("healthy", await response.Content.ReadAsStringAsync());
+    }
+
+    [TestMethod]
+    public void RealBearerHandlerPreservesRawEntraClaimNames()
+    {
+        using var factory = new WebApplicationFactory<McpServerProgram>()
+            .WithWebHostBuilder(builder =>
+                builder.ConfigureAppConfiguration((_, configuration) =>
+                    configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Entra:Instance"] = "https://login.microsoftonline.com/",
+                        ["Entra:TenantId"] = TestIdentity.TenantId,
+                        ["Entra:ClientId"] = TestIdentity.AgentId
+                    })));
+
+        var options = factory.Services
+            .GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(JwtBearerDefaults.AuthenticationScheme);
+
+        Assert.IsFalse(options.MapInboundClaims);
     }
 
     [TestMethod]
@@ -124,12 +159,60 @@ public sealed class PublicMcpServerComponentTests
                 @params = new
                 {
                     name = "contribute_knowledge",
-                    arguments = new { request = new { } }
+                    arguments = new
+                    {
+                        request = new
+                        {
+                            identity = new { initiatingUserId = TestIdentity.InitiatingUserId }
+                        }
+                    }
                 }
             },
             initialize.SessionId);
 
         Assert.IsTrue(call.Document.RootElement.GetProperty("result").GetProperty("isError").GetBoolean());
+    }
+
+    [TestMethod]
+    public async Task PublicToolRejectsInitiatingUserSubstitution()
+    {
+        using var client = _factory.CreateClient();
+        var initialize = await SendRequestAsync(client, InitializeRequest());
+
+        var call = await SendRequestAsync(
+            client,
+            new
+            {
+                jsonrpc = "2.0",
+                id = 2,
+                method = "tools/call",
+                @params = new
+                {
+                    name = "contribute_knowledge",
+                    arguments = new
+                    {
+                        request = new
+                        {
+                            identity = new
+                            {
+                                initiatingUserId =
+                                    "11111111-1111-1111-1111-111111111111:"
+                                    + "99999999-9999-9999-9999-999999999999"
+                            }
+                        }
+                    }
+                }
+            },
+            initialize.SessionId);
+
+        var text = call.Document.RootElement
+            .GetProperty("result")
+            .GetProperty("content")[0]
+            .GetProperty("text")
+            .GetString();
+        Assert.AreEqual(
+            "The authenticated identity does not match the request identity.",
+            text);
     }
 
     [TestMethod]
@@ -162,7 +245,13 @@ public sealed class PublicMcpServerComponentTests
                 @params = new
                 {
                     name = "delete_knowledge_item",
-                    arguments = new { }
+                    arguments = new
+                    {
+                        request = new
+                        {
+                            identity = new { initiatingUserId = TestIdentity.InitiatingUserId }
+                        }
+                    }
                 }
             },
             initialize.SessionId);
@@ -175,15 +264,8 @@ public sealed class PublicMcpServerComponentTests
         object request,
         string? sessionId = null)
     {
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/mcp")
-        {
-            Content = new StringContent(
-                JsonSerializer.Serialize(request),
-                Encoding.UTF8,
-                "application/json")
-        };
-        httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+        using var httpRequest = CreateMcpHttpRequest(request);
+        TestIdentity.AddTo(httpRequest, agentId: null);
 
         if (sessionId is not null)
         {
@@ -209,6 +291,37 @@ public sealed class PublicMcpServerComponentTests
             : sessionId;
 
         return new McpResponse(JsonDocument.Parse(json), responseSessionId);
+    }
+
+    private static WebApplicationFactory<McpServerProgram> CreateAuthenticatedFactory() =>
+        new WebApplicationFactory<McpServerProgram>().WithTestAuthentication();
+
+    private static object InitializeRequest() =>
+        new
+        {
+            jsonrpc = "2.0",
+            id = 1,
+            method = "initialize",
+            @params = new
+            {
+                protocolVersion = "2026-07-28",
+                capabilities = new { },
+                clientInfo = new { name = "component-tests", version = "1.0.0" }
+            }
+        };
+
+    private static HttpRequestMessage CreateMcpHttpRequest(object request)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/mcp")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(request),
+                Encoding.UTF8,
+                "application/json")
+        };
+        httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        httpRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+        return httpRequest;
     }
 
     private sealed record McpResponse(JsonDocument Document, string? SessionId);

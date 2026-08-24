@@ -72,7 +72,7 @@ public sealed record KnowledgeSpaceLifecycleTransition(
 public static class KnowledgeSpaceLifecycleTransitions
 {
     private static readonly IReadOnlyList<KnowledgeSpaceLifecycleTransition> DefinedTransitions =
-        Array.AsReadOnly(
+        Array.AsReadOnly<KnowledgeSpaceLifecycleTransition>(
         [
             new(
                 KnowledgeSpaceLifecycleStates.Draft,
