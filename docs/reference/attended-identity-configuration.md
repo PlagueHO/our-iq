@@ -3,7 +3,7 @@ title: Attended identity configuration
 status: Accepted
 ---
 
-# Attended identity configuration
+## Attended identity configuration
 
 ## Scope
 
