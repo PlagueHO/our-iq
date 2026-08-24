@@ -113,6 +113,94 @@ public sealed class OntologyPayloadTests
     }
 
     [TestMethod]
+    public void ValidateRejectsFrontMatterSchemaWithout2020_12Declaration()
+    {
+        var payload = CreateValidPayload() with
+        {
+            DocumentTypes =
+            [
+                CreateDocumentType(Parse(
+                    """
+                    {
+                      "type": "object"
+                    }
+                    """))
+            ]
+        };
+
+        Assert.Throws<OntologyPayloadValidationException>(() => payload.Validate());
+    }
+
+    [TestMethod]
+    public void ValidateRejectsMalformedFrontMatterSchema()
+    {
+        var payload = CreateValidPayload() with
+        {
+            DocumentTypes =
+            [
+                CreateDocumentType(Parse(
+                    """
+                    {
+                      "$schema": "https://json-schema.org/draft/2020-12/schema",
+                      "type": 42
+                    }
+                    """))
+            ]
+        };
+
+        Assert.Throws<OntologyPayloadValidationException>(() => payload.Validate());
+    }
+
+    [TestMethod]
+    public void RuleEvaluationBlocksOnlyRequiredViolations()
+    {
+        var required = OntologyRuleEvaluation.Evaluate(
+            new OntologyRule("required-rule", OntologyRuleLevel.Required, "Required finding."),
+            violated: true);
+        var recommended = OntologyRuleEvaluation.Evaluate(
+            new OntologyRule("recommended-rule", OntologyRuleLevel.Recommended, "Recommended finding."),
+            violated: true);
+        var informational = OntologyRuleEvaluation.Evaluate(
+            new OntologyRule("informational-rule", OntologyRuleLevel.Informational, "Informational finding."),
+            violated: true);
+
+        Assert.IsTrue(required!.BlocksActivation);
+        Assert.IsFalse(recommended!.BlocksActivation);
+        Assert.IsFalse(informational!.BlocksActivation);
+        Assert.IsNull(
+            OntologyRuleEvaluation.Evaluate(
+                new OntologyRule("valid-rule", OntologyRuleLevel.Required, "No finding."),
+                violated: false));
+    }
+
+    [TestMethod]
+    public void EnvelopeValidationRequiresMatchingPayloadIdentityAndDigest()
+    {
+        var payload = CreateValidPayload();
+        var envelope = new OntologyVersionEnvelope
+        {
+            Id = "ontology-product-v1",
+            RecordType = "ontologyVersion",
+            KnowledgeSpaceId = "ks-product",
+            OntologyId = payload.OntologyId,
+            OntologyVersionId = payload.OntologyVersionId,
+            SchemaVersion = "1",
+            Payload = payload,
+            PayloadDigest = OntologyPayloadDigest.Compute(payload),
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = "user-001",
+            SourceReferences = ["proposal-001"]
+        };
+
+        envelope.Validate();
+
+        Assert.Throws<OntologyPayloadValidationException>(
+            () => (envelope with { PayloadDigest = new string('a', 64) }).Validate());
+        Assert.Throws<OntologyPayloadValidationException>(
+            () => (envelope with { RecordType = "other" }).Validate());
+    }
+
+    [TestMethod]
     public void CanonicalizeMatchesRfc8785PrimitiveAndOrderingExample()
     {
         var json = """
@@ -195,11 +283,11 @@ public sealed class OntologyPayloadTests
             ]
         };
 
-    private static OntologyDocumentType CreateDocumentType() =>
+    private static OntologyDocumentType CreateDocumentType(JsonElement? schema = null) =>
         new(
             "decision-record",
             "A governed product or architecture decision.",
-            Parse(
+            schema ?? Parse(
                 """
                 {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
