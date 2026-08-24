@@ -47,6 +47,9 @@ internal sealed class KnowledgeSpaceControlRecordDocument
     [JsonProperty("createdBy")]
     public string? CreatedBy { get; init; }
 
+    [JsonProperty("roleGrants")]
+    public IReadOnlyList<KnowledgeSpaceRoleGrant>? RoleGrants { get; init; }
+
     public static KnowledgeSpaceControlRecordDocument FromDomain(
         KnowledgeSpaceControlRecord record) =>
         new()
@@ -64,7 +67,8 @@ internal sealed class KnowledgeSpaceControlRecordDocument
             ActiveChangeSetId = record.ActiveChangeSetId,
             CreatedAt = record.CreatedAt,
             UpdatedAt = record.UpdatedAt,
-            CreatedBy = record.CreatedBy
+            CreatedBy = record.CreatedBy,
+            RoleGrants = record.RoleGrants
         };
 
     public KnowledgeSpaceControlRecord ToDomain(string? etag) =>
@@ -83,6 +87,7 @@ internal sealed class KnowledgeSpaceControlRecordDocument
             CreatedAt = CreatedAt,
             UpdatedAt = UpdatedAt,
             CreatedBy = CreatedBy,
+            RoleGrants = RoleGrants ?? [],
             ETag = etag
         };
 }

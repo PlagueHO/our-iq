@@ -130,12 +130,14 @@ public sealed class KnowledgeSpaceControlRecordTests
         string targetState,
         string[] requiredRoles)
     {
-        var record = CreateRecord(currentState);
+        var (record, initiatingUserId) = CreateRecordWithRequiredRole(
+            currentState,
+            requiredRoles[0]);
 
         var transition = KnowledgeSpaceLifecycleTransitions.GetRequiredTransition(
             currentState,
             targetState);
-        var transitionedRecord = record.TransitionTo(targetState);
+        var transitionedRecord = record.TransitionTo(targetState, initiatingUserId);
 
         CollectionAssert.AreEquivalent(requiredRoles, transition.RequiredRoles.ToArray());
         Assert.AreEqual(targetState, transitionedRecord.LifecycleState);
@@ -151,7 +153,7 @@ public sealed class KnowledgeSpaceControlRecordTests
         string targetState)
     {
         var exception = Assert.Throws<KnowledgeSpaceStateConflictException>(
-            () => CreateRecord(currentState).TransitionTo(targetState));
+            () => CreateRecord(currentState).TransitionTo(targetState, "owner-001"));
 
         Assert.AreEqual(KnowledgeSpaceStateConflictException.Code, "space_state_conflict");
         Assert.AreEqual(currentState, exception.CurrentState);
@@ -180,9 +182,38 @@ public sealed class KnowledgeSpaceControlRecordTests
                     .Where(targetState => !ExpectedTransitionPairs.Contains((currentState, targetState)))
                     .Select(targetState => new object[] { currentState, targetState }));
 
+    [TestMethod]
+    [DynamicData(nameof(AllowedTransitions), DynamicDataSourceType.Method)]
+    public void TransitionToRejectsUsersWithoutTheRequiredRole(
+        string currentState,
+        string targetState,
+        string[] requiredRoles)
+    {
+        var record = CreateRecord(currentState);
+
+        Assert.Throws<KnowledgeSpaceRoleAuthorizationException>(
+            () => record.TransitionTo(targetState, "unassigned-user"));
+    }
+
+    private static (KnowledgeSpaceControlRecord Record, string InitiatingUserId) CreateRecordWithRequiredRole(
+        string lifecycleState,
+        string requiredRole)
+    {
+        var record = CreateRecord(lifecycleState);
+
+        if (requiredRole == KnowledgeSpaceRoles.Owner)
+        {
+            return (record, "owner-001");
+        }
+
+        return (
+            record.GrantRole("owner-001", "authorized-user", requiredRole),
+            "authorized-user");
+    }
+
     private static KnowledgeSpaceControlRecord CreateRecord(string lifecycleState) =>
         KnowledgeSpaceControlRecord.Create(
-            new KnowledgeSpaceCreation("Product", "contributor confirmation")) with
+            new KnowledgeSpaceCreation("Product", "contributor confirmation", "owner-001")) with
         {
             LifecycleState = lifecycleState
         };

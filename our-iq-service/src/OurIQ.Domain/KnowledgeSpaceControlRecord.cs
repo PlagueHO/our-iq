@@ -26,6 +26,42 @@ public static class KnowledgeSpaceRoles
 {
     public const string Owner = "Owner";
     public const string OntologyManager = "Ontology Manager";
+    public const string Contributor = "Contributor";
+    public const string Reader = "Reader";
+
+    private static readonly IReadOnlySet<string> DefinedRoles = new HashSet<string>(
+        StringComparer.Ordinal)
+    {
+        Owner,
+        OntologyManager,
+        Contributor,
+        Reader
+    };
+
+    public static bool IsDefined(string? role) => role is not null && DefinedRoles.Contains(role);
+}
+
+public sealed record KnowledgeSpaceRoleGrant(string UserId, string Role)
+{
+    public void Validate()
+    {
+        ValidateRequired(UserId, nameof(UserId));
+
+        if (!KnowledgeSpaceRoles.IsDefined(Role))
+        {
+            throw new KnowledgeSpaceControlRecordValidationException(
+                $"The role '{Role}' is not supported.");
+        }
+    }
+
+    private static void ValidateRequired(string? value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new KnowledgeSpaceControlRecordValidationException(
+                $"The {name} value is required.");
+        }
+    }
 }
 
 public sealed record KnowledgeSpaceLifecycleTransition(
@@ -147,6 +183,8 @@ public sealed record KnowledgeSpaceControlRecord
 
     public string? CreatedBy { get; init; }
 
+    public IReadOnlyList<KnowledgeSpaceRoleGrant> RoleGrants { get; init; } = [];
+
     public string? ETag { get; init; }
 
     public static KnowledgeSpaceControlRecord Create(
@@ -170,7 +208,10 @@ public sealed record KnowledgeSpaceControlRecord
             MutationPolicyVersion = creation.MutationPolicyVersion,
             CreatedAt = timestamp,
             UpdatedAt = timestamp,
-            CreatedBy = creation.CreatedBy
+            CreatedBy = creation.CreatedBy,
+            RoleGrants = string.IsNullOrWhiteSpace(creation.CreatedBy)
+                ? []
+                : [new KnowledgeSpaceRoleGrant(creation.CreatedBy, KnowledgeSpaceRoles.Owner)]
         };
     }
 
@@ -192,18 +233,95 @@ public sealed record KnowledgeSpaceControlRecord
             throw new KnowledgeSpaceControlRecordValidationException(
                 $"The lifecycle state '{LifecycleState}' is not supported.");
         }
+
+        var duplicateGrant = RoleGrants
+            .GroupBy(grant => (grant.UserId, grant.Role))
+            .FirstOrDefault(grants => grants.Count() > 1);
+
+        if (duplicateGrant is not null)
+        {
+            throw new KnowledgeSpaceControlRecordValidationException(
+                $"The role '{duplicateGrant.Key.Role}' is granted more than once to '{duplicateGrant.Key.UserId}'.");
+        }
+
+        foreach (var roleGrant in RoleGrants)
+        {
+            roleGrant.Validate();
+        }
     }
 
-    public KnowledgeSpaceControlRecord TransitionTo(string targetState)
+    public KnowledgeSpaceControlRecord TransitionTo(
+        string targetState,
+        string initiatingUserId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetState);
+        ArgumentException.ThrowIfNullOrWhiteSpace(initiatingUserId);
         Validate();
-        _ = KnowledgeSpaceLifecycleTransitions.GetRequiredTransition(LifecycleState, targetState);
+        var transition = KnowledgeSpaceLifecycleTransitions.GetRequiredTransition(
+            LifecycleState,
+            targetState);
+        RequireAnyRole(initiatingUserId, transition.RequiredRoles);
 
         return this with
         {
             LifecycleState = targetState
         };
+    }
+
+    public KnowledgeSpaceControlRecord GrantRole(
+        string grantingUserId,
+        string grantedUserId,
+        string role)
+    {
+        Validate();
+        RequireOwner(grantingUserId);
+        var grant = new KnowledgeSpaceRoleGrant(grantedUserId, role);
+        grant.Validate();
+
+        return RoleGrants.Any(existing => existing == grant)
+            ? this
+            : this with { RoleGrants = [.. RoleGrants, grant] };
+    }
+
+    public KnowledgeSpaceControlRecord RevokeRole(
+        string revokingUserId,
+        string revokedUserId,
+        string role)
+    {
+        Validate();
+        RequireOwner(revokingUserId);
+        var grant = new KnowledgeSpaceRoleGrant(revokedUserId, role);
+        grant.Validate();
+
+        return this with
+        {
+            RoleGrants = RoleGrants.Where(existing => existing != grant).ToArray()
+        };
+    }
+
+    public bool HasRole(string userId, string role)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(role);
+        return RoleGrants.Any(grant =>
+            string.Equals(grant.UserId, userId, StringComparison.Ordinal)
+            && string.Equals(grant.Role, role, StringComparison.Ordinal));
+    }
+
+    private void RequireOwner(string userId)
+    {
+        RequireAnyRole(userId, [KnowledgeSpaceRoles.Owner]);
+    }
+
+    private void RequireAnyRole(string userId, IReadOnlyList<string> requiredRoles)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+
+        if (!requiredRoles.Any(role => HasRole(userId, role)))
+        {
+            throw new KnowledgeSpaceRoleAuthorizationException(
+                $"The user '{userId}' lacks a role required for this operation.");
+        }
     }
 
     private static void ValidateRequired(string? value, string name)
@@ -218,6 +336,9 @@ public sealed record KnowledgeSpaceControlRecord
 
 public sealed class KnowledgeSpaceControlRecordValidationException(string message)
     : InvalidOperationException(message);
+
+public sealed class KnowledgeSpaceRoleAuthorizationException(string message)
+    : UnauthorizedAccessException(message);
 
 public sealed class KnowledgeSpaceControlRecordConflictException(
     string knowledgeSpaceId,
