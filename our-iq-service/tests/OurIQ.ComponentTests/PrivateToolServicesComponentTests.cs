@@ -2,11 +2,13 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using OurIQ.ToolServices;
 
 namespace OurIQ.ComponentTests;
@@ -18,7 +20,7 @@ public sealed class PrivateToolServicesComponentTests
     [TestMethod]
     public async Task HealthAndReadinessAreSeparateFromPrivateMcp()
     {
-        using var factory = new WebApplicationFactory<ToolServicesProgram>();
+        using var factory = CreateAuthorizedFactory();
         using var client = factory.CreateClient();
 
         using var health = await client.GetAsync("/health");
@@ -31,14 +33,34 @@ public sealed class PrivateToolServicesComponentTests
     }
 
     [TestMethod]
+    public void RealBearerHandlerPreservesRawEntraClaimNames()
+    {
+        using var factory = new WebApplicationFactory<ToolServicesProgram>()
+            .WithWebHostBuilder(builder =>
+                builder.ConfigureAppConfiguration((_, configuration) =>
+                    configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Entra:Instance"] = "https://login.microsoftonline.com/",
+                        ["Entra:TenantId"] = TestIdentity.TenantId,
+                        ["Entra:ClientId"] = TestIdentity.AgentId
+                    })));
+
+        var options = factory.Services
+            .GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(JwtBearerDefaults.AuthenticationScheme);
+
+        Assert.IsFalse(options.MapInboundClaims);
+    }
+
+    [TestMethod]
     public async Task PrivateMcpDeniesCallersWithoutPrivateExecutionContext()
     {
-        using var factory = new WebApplicationFactory<ToolServicesProgram>();
+        using var factory = CreateAuthorizedFactory();
         using var client = factory.CreateClient();
 
         using var response = await SendHttpRequestAsync(client, InitializeRequest());
 
-        Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [TestMethod]
@@ -102,17 +124,17 @@ public sealed class PrivateToolServicesComponentTests
     [TestMethod]
     public async Task PublicMcpServerDoesNotExposePrivateDeterministicTools()
     {
-        using var factory = new WebApplicationFactory<McpServerProgram>();
+        using var factory = CreatePublicAuthorizedFactory();
         using var client = factory.CreateClient();
 
         var initialize = await SendMcpRequestAsync(
             client,
             InitializeRequest(),
-            includePrivateExecutionContext: false);
+            includePrivateExecutionContext: true);
         var tools = await SendMcpRequestAsync(
             client,
             ToolsListRequest(),
-            includePrivateExecutionContext: false,
+            includePrivateExecutionContext: true,
             initialize.SessionId);
 
         var toolNames = tools.Document.RootElement
@@ -147,7 +169,17 @@ public sealed class PrivateToolServicesComponentTests
                 @params = new
                 {
                     name = "get_space",
-                    arguments = new { request = new { } }
+                    arguments = new
+                    {
+                        request = new
+                        {
+                            identity = new
+                            {
+                                initiatingUserId = TestIdentity.InitiatingUserId,
+                                actingAgentId = TestIdentity.AgentId
+                            }
+                        }
+                    }
                 }
             },
             includePrivateExecutionContext: true,
@@ -157,16 +189,78 @@ public sealed class PrivateToolServicesComponentTests
     }
 
     [TestMethod]
+    public async Task PrivateMcpRejectsAnUnauthorizedAgent()
+    {
+        using var factory = CreateAuthorizedFactory();
+        using var client = factory.CreateClient();
+        using var request = CreateMcpHttpRequest(InitializeRequest());
+        TestIdentity.AddTo(request, "44444444-4444-4444-4444-444444444444");
+
+        using var response = await client.SendAsync(request);
+
+        Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task PrivateToolRejectsAgentIdentitySubstitution()
+    {
+        using var factory = CreateAuthorizedFactory();
+        using var client = factory.CreateClient();
+        var initialize = await SendMcpRequestAsync(
+            client,
+            InitializeRequest(),
+            includePrivateExecutionContext: true);
+
+        var call = await SendMcpRequestAsync(
+            client,
+            new
+            {
+                jsonrpc = "2.0",
+                id = 2,
+                method = "tools/call",
+                @params = new
+                {
+                    name = "get_space",
+                    arguments = new
+                    {
+                        request = new
+                        {
+                            identity = new
+                            {
+                                initiatingUserId = TestIdentity.InitiatingUserId,
+                                actingAgentId = "55555555-5555-5555-5555-555555555555"
+                            }
+                        }
+                    }
+                }
+            },
+            includePrivateExecutionContext: true,
+            initialize.SessionId);
+
+        var text = call.Document.RootElement
+            .GetProperty("result")
+            .GetProperty("content")[0]
+            .GetProperty("text")
+            .GetString();
+        Assert.AreEqual(
+            "The authenticated identity does not match the request identity.",
+            text);
+    }
+
+    [TestMethod]
     public async Task ManagementSurfaceUsesASeparateAuthorizationPolicy()
     {
         using var factory = CreateAuthorizedFactory();
         using var client = factory.CreateClient();
 
-        client.DefaultRequestHeaders.Add("X-Test-Private-Execution-Context", "valid");
+        client.DefaultRequestHeaders.Add(TestAuthenticationHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthenticationHandler.TenantIdHeader, TestIdentity.TenantId);
+        client.DefaultRequestHeaders.Add(TestAuthenticationHandler.ObjectIdHeader, TestIdentity.ObjectId);
+        client.DefaultRequestHeaders.Add(TestAuthenticationHandler.AgentIdHeader, TestIdentity.AgentId);
         using var privateContextManagement = await client.GetAsync("/management/status");
         Assert.AreEqual(HttpStatusCode.Forbidden, privateContextManagement.StatusCode);
 
-        client.DefaultRequestHeaders.Remove("X-Test-Private-Execution-Context");
+        client.DefaultRequestHeaders.Remove(TestAuthenticationHandler.AgentIdHeader);
         client.DefaultRequestHeaders.Add("X-Test-Management-Access", "valid");
         using var management = await client.GetAsync("/management/status");
         Assert.AreEqual(HttpStatusCode.OK, management.StatusCode);
@@ -181,14 +275,17 @@ public sealed class PrivateToolServicesComponentTests
     }
 
     private static WebApplicationFactory<ToolServicesProgram> CreateAuthorizedFactory() =>
-        new WebApplicationFactory<ToolServicesProgram>().WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services =>
+        new WebApplicationFactory<ToolServicesProgram>().WithTestAuthentication(
+            services =>
             {
-                services.RemoveAll<IPrivateExecutionContextValidator>();
                 services.RemoveAll<IManagementAccessValidator>();
-                services.AddSingleton<IPrivateExecutionContextValidator, TestPrivateExecutionContextValidator>();
                 services.AddSingleton<IManagementAccessValidator, TestManagementAccessValidator>();
-            }));
+                services.Configure<PrivateIdentityOptions>(options =>
+                    options.AuthorizedAgentClientIds = [TestIdentity.AgentId]);
+            });
+
+    private static WebApplicationFactory<McpServerProgram> CreatePublicAuthorizedFactory() =>
+        new WebApplicationFactory<McpServerProgram>().WithTestAuthentication();
 
     private static object InitializeRequest() =>
         new
@@ -231,7 +328,7 @@ public sealed class PrivateToolServicesComponentTests
 
         if (includePrivateExecutionContext)
         {
-            httpRequest.Headers.Add("X-Test-Private-Execution-Context", "valid");
+            TestIdentity.AddTo(httpRequest);
         }
 
         if (sessionId is not null)
@@ -271,19 +368,6 @@ public sealed class PrivateToolServicesComponentTests
         };
 
         return httpRequest.WithAcceptHeaders();
-    }
-
-    private sealed class TestPrivateExecutionContextValidator : IPrivateExecutionContextValidator
-    {
-        public ValueTask<bool> ValidateAsync(
-            HttpContext httpContext,
-            CancellationToken cancellationToken) =>
-            ValueTask.FromResult(
-                httpContext.Request.Headers.TryGetValue(
-                    "X-Test-Private-Execution-Context",
-                    out var value)
-                && value.Count == 1
-                && value[0] == "valid");
     }
 
     private sealed class TestManagementAccessValidator : IManagementAccessValidator

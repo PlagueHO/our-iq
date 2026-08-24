@@ -4,12 +4,11 @@ Our IQ is a proposed team-level, project-level, or organizational MCP
 knowledge server for creating and maintaining a shared, repository-backed
 knowledge store: a governed second brain for teams and their work.
 
-This repository contains design and documentation plus a reproducible .NET
-public MCP host scaffold. The host exposes the public streamable HTTP boundary
-and health endpoint, but its intent tools do not yet implement domain behavior.
-The repository does not yet provide a complete knowledge server, an Azure
-deployment, or a final storage, indexing, authentication, or retrieval
-architecture.
+This repository contains design and documentation plus reproducible .NET public
+MCP and private Tool Services host scaffolds. The hosts enforce attended
+Microsoft Entra identity boundaries, but their intent and deterministic tools
+do not yet implement the complete domain behavior. The repository does not yet
+provide a complete knowledge server or an Azure deployment.
 
 ## Documentation
 

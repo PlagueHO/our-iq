@@ -1,15 +1,21 @@
-using System.Text.Encodings.Web;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol.Protocol;
+using OurIQ.Contracts;
 
 namespace OurIQ.ToolServices;
 
 public static class ToolServicesPolicies
 {
-    public const string Authentication = "tool-services";
     public const string PrivateTools = "private-tools";
     public const string Management = "management";
+}
+
+public sealed class PrivateIdentityOptions
+{
+    public const string SectionName = "PrivateIdentity";
+
+    public string[] AuthorizedAgentClientIds { get; set; } = [];
 }
 
 public interface IPrivateExecutionContextValidator
@@ -74,6 +80,29 @@ public sealed class DenyPrivateExecutionContextValidator : IPrivateExecutionCont
         ValueTask.FromResult(false);
 }
 
+public sealed class EntraPrivateExecutionContextValidator(
+    IOptions<PrivateIdentityOptions> options)
+    : IPrivateExecutionContextValidator
+{
+    public ValueTask<bool> ValidateAsync(
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        if (!AttendedIdentityClaims.TryCreatePrivate(httpContext.User, out var identity))
+        {
+            return ValueTask.FromResult(false);
+        }
+
+        var isAuthorized = options.Value.AuthorizedAgentClientIds.Any(
+            agentId => Guid.TryParse(agentId, out var parsed)
+                && string.Equals(
+                    parsed.ToString("D"),
+                    identity.ActingAgentId,
+                    StringComparison.OrdinalIgnoreCase));
+        return ValueTask.FromResult(isAuthorized);
+    }
+}
+
 public sealed class DenyManagementAccessValidator : IManagementAccessValidator
 {
     public ValueTask<bool> ValidateAsync(
@@ -82,24 +111,18 @@ public sealed class DenyManagementAccessValidator : IManagementAccessValidator
         ValueTask.FromResult(false);
 }
 
-public sealed class DenyAuthenticationHandler(
-    IOptionsMonitor<AuthenticationSchemeOptions> options,
-    ILoggerFactory logger,
-    UrlEncoder encoder)
-    : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+public static class IdentityToolResults
 {
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync() =>
-        Task.FromResult(AuthenticateResult.NoResult());
-
-    protected override Task HandleChallengeAsync(AuthenticationProperties? properties)
-    {
-        Response.StatusCode = StatusCodes.Status403Forbidden;
-        return Task.CompletedTask;
-    }
-
-    protected override Task HandleForbiddenAsync(AuthenticationProperties? properties)
-    {
-        Response.StatusCode = StatusCodes.Status403Forbidden;
-        return Task.CompletedTask;
-    }
+    public static CallToolResult IdentityMismatch() =>
+        new()
+        {
+            IsError = true,
+            Content =
+            [
+                new TextContentBlock
+                {
+                    Text = "The authenticated identity does not match the request identity."
+                }
+            ]
+        };
 }

@@ -124,7 +124,7 @@ public sealed class KnowledgeSpaceControlRecordTests
     }
 
     [TestMethod]
-    [DynamicData(nameof(AllowedTransitions), DynamicDataSourceType.Method)]
+    [DynamicData(nameof(AllowedTransitions))]
     public void TransitionToAllowsEveryDefinedTransition(
         string currentState,
         string targetState,
@@ -147,7 +147,7 @@ public sealed class KnowledgeSpaceControlRecordTests
     }
 
     [TestMethod]
-    [DynamicData(nameof(RejectedTransitions), DynamicDataSourceType.Method)]
+    [DynamicData(nameof(RejectedTransitions))]
     public void TransitionToRejectsEveryUnlistedTransition(
         string currentState,
         string targetState)
@@ -155,7 +155,6 @@ public sealed class KnowledgeSpaceControlRecordTests
         var exception = Assert.Throws<KnowledgeSpaceStateConflictException>(
             () => CreateRecord(currentState).TransitionTo(targetState, "owner-001"));
 
-        Assert.AreEqual(KnowledgeSpaceStateConflictException.Code, "space_state_conflict");
         Assert.AreEqual(currentState, exception.CurrentState);
         Assert.AreEqual(targetState, exception.TargetState);
     }
@@ -163,11 +162,12 @@ public sealed class KnowledgeSpaceControlRecordTests
     public static IEnumerable<object[]> AllowedTransitions() =>
         ExpectedTransitions.Select(
             transition =>
-            [
+            new object[]
+            {
                 transition.FromState,
                 transition.ToState,
                 transition.RequiredRoles.ToArray()
-            ]);
+            });
 
     public static IEnumerable<object[]> RejectedTransitions() =>
         ExpectedTransitions
@@ -183,7 +183,7 @@ public sealed class KnowledgeSpaceControlRecordTests
                     .Select(targetState => new object[] { currentState, targetState }));
 
     [TestMethod]
-    [DynamicData(nameof(AllowedTransitions), DynamicDataSourceType.Method)]
+    [DynamicData(nameof(AllowedTransitions))]
     public void TransitionToRejectsUsersWithoutTheRequiredRole(
         string currentState,
         string targetState,
