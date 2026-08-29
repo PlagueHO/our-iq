@@ -27,6 +27,7 @@ var toolServices = builder.AddProject<Projects.OurIQ_ToolServices>("tool-service
     .WaitFor(search);
 
 builder.AddProject<Projects.OurIQ_McpServer>("mcp-server")
+    .WithReference(cosmos)
     .WithReference(toolServices)
     .WaitFor(toolServices)
     .WithExternalHttpEndpoints();

@@ -58,6 +58,56 @@ public sealed class KnowledgeSpaceCosmosRepository(
         }
     }
 
+    public async Task<KnowledgeSpaceControlRecordPage> ListAsync(
+        KnowledgeSpaceControlRecordQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        query.Validate();
+
+        var container = await GetContainerAsync(cancellationToken);
+        var queryDefinition = new QueryDefinition(
+            """
+            SELECT * FROM c
+            WHERE c.recordType = @recordType
+              AND EXISTS(
+                  SELECT VALUE grant
+                  FROM grant IN c.roleGrants
+                  WHERE grant.userId = @userId)
+              AND (IS_NULL(@cursor) OR c.id > @cursor)
+              AND (IS_NULL(@lifecycleState) OR c.lifecycleState = @lifecycleState)
+            ORDER BY c.id
+            """)
+            .WithParameter("@recordType", KnowledgeSpaceControlRecord.RecordTypeValue)
+            .WithParameter("@userId", query.UserId)
+            .WithParameter("@cursor", query.Cursor)
+            .WithParameter("@lifecycleState", query.LifecycleState);
+        using var iterator = container.GetItemQueryIterator<KnowledgeSpaceControlRecordDocument>(
+            queryDefinition,
+            requestOptions: new QueryRequestOptions { MaxItemCount = query.PageSize + 1 });
+
+        var documents = new List<KnowledgeSpaceControlRecordDocument>(query.PageSize + 1);
+        while (iterator.HasMoreResults && documents.Count <= query.PageSize)
+        {
+            var response = await iterator.ReadNextAsync(cancellationToken);
+            documents.AddRange(response.Resource);
+        }
+
+        var hasNextPage = documents.Count > query.PageSize;
+        var pageDocuments = documents.Take(query.PageSize).ToArray();
+        var records = pageDocuments
+            .Select(document => document.ToDomain(null))
+            .ToArray();
+        foreach (var record in records)
+        {
+            record.Validate();
+        }
+
+        return new KnowledgeSpaceControlRecordPage(
+            records,
+            hasNextPage ? records[^1].KnowledgeSpaceId : null);
+    }
+
     public async Task<KnowledgeSpaceControlRecord> UpdateAsync(
         KnowledgeSpaceControlRecord record,
         string expectedETag,

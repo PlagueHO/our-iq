@@ -279,6 +279,29 @@ public sealed class ContractSchemaTests
         Assert.IsFalse(manifest.Contains("private", StringComparison.OrdinalIgnoreCase));
     }
 
+    [TestMethod]
+    public void PublicSpaceRepresentationExcludesControlMetadata()
+    {
+        var schemaPath = Path.Combine(
+            ContractsRoot,
+            "public",
+            "v1.0",
+            "public-thin-slice.schema.json");
+        using var document = JsonDocument.Parse(File.ReadAllBytes(schemaPath));
+        var publicSpace = document.RootElement
+            .GetProperty("$defs")
+            .GetProperty("publicKnowledgeSpace");
+        var properties = publicSpace.GetProperty("properties");
+
+        Assert.IsTrue(properties.TryGetProperty("knowledgeSpaceId", out _));
+        Assert.IsTrue(properties.TryGetProperty("lifecycleState", out _));
+        Assert.IsFalse(properties.TryGetProperty("roleGrants", out _));
+        Assert.IsFalse(properties.TryGetProperty("mutationPolicy", out _));
+        Assert.IsFalse(properties.TryGetProperty("activeOntologyVersionId", out _));
+        Assert.IsFalse(properties.TryGetProperty("canonicalHeadVersion", out _));
+        Assert.IsFalse(properties.TryGetProperty("eTag", out _));
+    }
+
     private static void AssertValid(string surface, string instance)
     {
         var schema = GetSchema(surface);

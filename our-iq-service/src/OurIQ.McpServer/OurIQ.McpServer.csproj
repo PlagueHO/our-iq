@@ -4,7 +4,9 @@
     <PackageReference Include="Microsoft.Identity.Web" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
     <ProjectReference Include="..\OurIQ.Contracts\OurIQ.Contracts.csproj" />
+    <ProjectReference Include="..\OurIQ.Domain\OurIQ.Domain.csproj" />
     <ProjectReference Include="..\OurIQ.Observability\OurIQ.Observability.csproj" />
+    <ProjectReference Include="..\OurIQ.ToolServices\OurIQ.ToolServices.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
