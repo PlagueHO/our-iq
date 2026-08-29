@@ -172,6 +172,80 @@
     "notApplicablePagination": {
       "const": "notApplicable"
     },
+    "spaceDiscoveryPagination": {
+      "type": "object",
+      "required": [
+        "pageSize"
+      ],
+      "properties": {
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "lifecycleState": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "pending",
+            "active",
+            "readonly",
+            "maintenance",
+            "retired",
+            "deleting",
+            "deleted"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "publicKnowledgeSpace": {
+      "type": "object",
+      "required": [
+        "knowledgeSpaceId",
+        "displayName",
+        "lifecycleState",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lifecycleState": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "pending",
+            "active",
+            "readonly",
+            "maintenance",
+            "retired",
+            "deleting",
+            "deleted"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
     "errorResponse": {
       "type": "object",
       "required": [

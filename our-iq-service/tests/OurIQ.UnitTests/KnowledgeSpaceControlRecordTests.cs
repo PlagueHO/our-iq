@@ -124,6 +124,33 @@ public sealed class KnowledgeSpaceControlRecordTests
     }
 
     [TestMethod]
+    public void DiscoveryQueryAcceptsTheContractPageBoundsAndLifecycleFilter()
+    {
+        new KnowledgeSpaceControlRecordQuery(
+            "reader-001",
+            KnowledgeSpaceControlRecordQuery.MaximumPageSize,
+            "ks-cursor",
+            KnowledgeSpaceLifecycleStates.Readonly)
+            .Validate();
+    }
+
+    [TestMethod]
+    public void DiscoveryQueryRejectsInvalidBoundsAndLifecycleFilter()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => new KnowledgeSpaceControlRecordQuery("reader-001", 0).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => new KnowledgeSpaceControlRecordQuery(
+                "reader-001",
+                KnowledgeSpaceControlRecordQuery.MaximumPageSize + 1).Validate());
+        Assert.Throws<ArgumentException>(
+            () => new KnowledgeSpaceControlRecordQuery(
+                "reader-001",
+                20,
+                LifecycleState: "unknown").Validate());
+    }
+
+    [TestMethod]
     [DynamicData(nameof(AllowedTransitions))]
     public void TransitionToAllowsEveryDefinedTransition(
         string currentState,

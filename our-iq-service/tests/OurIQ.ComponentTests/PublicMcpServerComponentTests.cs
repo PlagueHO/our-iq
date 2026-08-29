@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using OurIQ.Domain;
 
 namespace OurIQ.ComponentTests;
 
@@ -127,6 +129,113 @@ public sealed class PublicMcpServerComponentTests
         Assert.DoesNotContain("create_ontology", toolNames);
         Assert.DoesNotContain("update_ontology", toolNames);
         Assert.DoesNotContain("delete_ontology", toolNames);
+    }
+
+    [TestMethod]
+    public async Task PublicMcpDiscoversAuthorizedSpaceResources()
+    {
+        using var client = _factory.CreateClient();
+        var initialize = await SendRequestAsync(client, InitializeRequest());
+
+        var templates = await SendRequestAsync(
+            client,
+            new
+            {
+                jsonrpc = "2.0",
+                id = 2,
+                method = "resources/templates/list",
+                @params = new { }
+            },
+            initialize.SessionId);
+
+        var uris = templates.Document.RootElement
+            .GetProperty("result")
+            .GetProperty("resourceTemplates")
+            .EnumerateArray()
+            .Select(template => template.GetProperty("uriTemplate").GetString())
+            .ToArray();
+
+        CollectionAssert.Contains(uris, "ouriq://spaces{?cursor,pageSize,lifecycleState}");
+        CollectionAssert.Contains(uris, "ouriq://spaces/{knowledgeSpaceId}");
+    }
+
+    [TestMethod]
+    public async Task PublicSpaceResourceReturnsOnlyVisiblePublicState()
+    {
+        var record = KnowledgeSpaceControlRecord.Create(
+            new KnowledgeSpaceCreation(
+                "Product",
+                "contributor confirmation",
+                TestIdentity.InitiatingUserId),
+            () => Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            new DateTimeOffset(2026, 8, 30, 0, 0, 0, TimeSpan.Zero)) with
+            {
+                LifecycleState = KnowledgeSpaceLifecycleStates.Active,
+                ActiveOntologyVersionId = "ontology-001",
+                MutationPolicyVersion = "2.0"
+            };
+        using var factory = CreateAuthenticatedFactory(new InMemoryKnowledgeSpaceRepository([record]));
+        using var client = factory.CreateClient();
+        var initialize = await SendRequestAsync(client, InitializeRequest());
+
+        var resource = await SendRequestAsync(
+            client,
+            new
+            {
+                jsonrpc = "2.0",
+                id = 2,
+                method = "resources/read",
+                @params = new { uri = $"ouriq://spaces/{record.KnowledgeSpaceId}" }
+            },
+            initialize.SessionId);
+
+        var text = resource.Document.RootElement
+            .GetProperty("result")
+            .GetProperty("contents")[0]
+            .GetProperty("text")
+            .GetString();
+        using var document = JsonDocument.Parse(text!);
+        var space = document.RootElement;
+
+        Assert.IsTrue(space.TryGetProperty("knowledgeSpaceId", out _), space.GetRawText());
+        Assert.AreEqual(record.KnowledgeSpaceId, space.GetProperty("knowledgeSpaceId").GetString());
+        Assert.AreEqual("Product", space.GetProperty("displayName").GetString());
+        Assert.AreEqual("active", space.GetProperty("lifecycleState").GetString());
+        Assert.IsFalse(space.TryGetProperty("roleGrants", out _));
+        Assert.IsFalse(space.TryGetProperty("mutationPolicy", out _));
+        Assert.IsFalse(space.TryGetProperty("activeOntologyVersionId", out _));
+    }
+
+    [TestMethod]
+    public async Task PublicSpaceCollectionUsesVisibilityFilteringAndCursorPaging()
+    {
+        var first = CreateSpace("ks-001", TestIdentity.InitiatingUserId);
+        var second = CreateSpace("ks-002", TestIdentity.InitiatingUserId);
+        var inaccessible = CreateSpace("ks-003", "other-user");
+        using var factory = CreateAuthenticatedFactory(
+            new InMemoryKnowledgeSpaceRepository([inaccessible, second, first]));
+        using var client = factory.CreateClient();
+        var initialize = await SendRequestAsync(client, InitializeRequest());
+
+        var firstPage = await ReadResourceAsync(
+            client,
+            initialize.SessionId,
+            "ouriq://spaces?pageSize=1&lifecycleState=active");
+        var firstPageSpaces = firstPage.GetProperty("spaces");
+        Assert.AreEqual(1, firstPageSpaces.GetArrayLength());
+        Assert.AreEqual("ks-001", firstPageSpaces[0].GetProperty("knowledgeSpaceId").GetString());
+        Assert.AreEqual(1, firstPage.GetProperty("pagination").GetProperty("pageSize").GetInt32());
+        var cursor = firstPage.GetProperty("pagination").GetProperty("nextCursor").GetString();
+        Assert.AreEqual("ks-001", cursor);
+
+        var secondPage = await ReadResourceAsync(
+            client,
+            initialize.SessionId,
+            $"ouriq://spaces?cursor={cursor}&pageSize=1&lifecycleState=active");
+        var secondPageSpaces = secondPage.GetProperty("spaces");
+        Assert.AreEqual(1, secondPageSpaces.GetArrayLength());
+        Assert.AreEqual("ks-002", secondPageSpaces[0].GetProperty("knowledgeSpaceId").GetString());
+        Assert.IsNull(secondPage.GetProperty("pagination").GetProperty("nextCursor").GetString());
     }
 
     [TestMethod]
@@ -293,8 +402,17 @@ public sealed class PublicMcpServerComponentTests
         return new McpResponse(JsonDocument.Parse(json), responseSessionId);
     }
 
-    private static WebApplicationFactory<McpServerProgram> CreateAuthenticatedFactory() =>
-        new WebApplicationFactory<McpServerProgram>().WithTestAuthentication();
+    private static WebApplicationFactory<McpServerProgram> CreateAuthenticatedFactory(
+        IKnowledgeSpaceControlRecordRepository? repository = null) =>
+        new WebApplicationFactory<McpServerProgram>().WithTestAuthentication(
+            services =>
+            {
+                if (repository is not null)
+                {
+                    services.RemoveAll<IKnowledgeSpaceControlRecordRepository>();
+                    services.AddSingleton(repository);
+                }
+            });
 
     private static object InitializeRequest() =>
         new
@@ -324,5 +442,81 @@ public sealed class PublicMcpServerComponentTests
         return httpRequest;
     }
 
+    private static async Task<JsonElement> ReadResourceAsync(
+        HttpClient client,
+        string? sessionId,
+        string uri)
+    {
+        var resource = await SendRequestAsync(
+            client,
+            new
+            {
+                jsonrpc = "2.0",
+                id = 2,
+                method = "resources/read",
+                @params = new { uri }
+            },
+            sessionId);
+        var text = resource.Document.RootElement
+            .GetProperty("result")
+            .GetProperty("contents")[0]
+            .GetProperty("text")
+            .GetString();
+        using var document = JsonDocument.Parse(text!);
+        return document.RootElement.Clone();
+    }
+
+    private static KnowledgeSpaceControlRecord CreateSpace(string knowledgeSpaceId, string userId) =>
+        KnowledgeSpaceControlRecord.Create(
+            new KnowledgeSpaceCreation("Product", "contributor confirmation", userId)) with
+        {
+            KnowledgeSpaceId = knowledgeSpaceId,
+            LifecycleState = KnowledgeSpaceLifecycleStates.Active
+        };
+
     private sealed record McpResponse(JsonDocument Document, string? SessionId);
+
+    private sealed class InMemoryKnowledgeSpaceRepository(
+        IReadOnlyList<KnowledgeSpaceControlRecord> records)
+        : IKnowledgeSpaceControlRecordRepository
+    {
+        public Task<KnowledgeSpaceControlRecord> CreateAsync(
+            KnowledgeSpaceCreation creation,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<KnowledgeSpaceControlRecord?> GetAsync(
+            string knowledgeSpaceId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(records.SingleOrDefault(record =>
+                string.Equals(record.KnowledgeSpaceId, knowledgeSpaceId, StringComparison.Ordinal)));
+
+        public Task<KnowledgeSpaceControlRecordPage> ListAsync(
+            KnowledgeSpaceControlRecordQuery query,
+            CancellationToken cancellationToken = default)
+        {
+            query.Validate();
+            var visible = records
+                .Where(record => record.RoleGrants.Any(grant =>
+                    string.Equals(grant.UserId, query.UserId, StringComparison.Ordinal)))
+                .Where(record => query.LifecycleState is null
+                    || string.Equals(record.LifecycleState, query.LifecycleState, StringComparison.Ordinal))
+                .OrderBy(record => record.KnowledgeSpaceId, StringComparer.Ordinal)
+                .Where(record => query.Cursor is null
+                    || string.CompareOrdinal(record.KnowledgeSpaceId, query.Cursor) > 0)
+                .Take(query.PageSize + 1)
+                .ToArray();
+            var page = visible.Take(query.PageSize).ToArray();
+            var nextCursor = visible.Length > query.PageSize
+                ? page[^1].KnowledgeSpaceId
+                : null;
+            return Task.FromResult(new KnowledgeSpaceControlRecordPage(page, nextCursor));
+        }
+
+        public Task<KnowledgeSpaceControlRecord> UpdateAsync(
+            KnowledgeSpaceControlRecord record,
+            string expectedETag,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+    }
 }
