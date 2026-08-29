@@ -90,4 +90,142 @@ public sealed class KnowledgeSpaceCosmosRepositoryComponentTests
                 updated with { LifecycleState = "invalid" },
                 updated.ETag!));
     }
+
+    [TestMethod]
+    public async Task CosmosEmulatorActivatesOntologyWithOneVisibilityBoundary()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("OURIQ_COSMOS_CONNECTION_STRING");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            Assert.Inconclusive(
+                "Set OURIQ_COSMOS_CONNECTION_STRING to run Cosmos emulator component tests.");
+        }
+
+        var options = new KnowledgeSpaceCosmosOptions
+        {
+            DatabaseName = $"ouriq-test-{Guid.NewGuid():N}",
+            ContainerName = "knowledgeSpaceControl"
+        };
+        using var cosmosClient = new CosmosClient(
+            connectionString,
+            new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway });
+        var spaces = new KnowledgeSpaceCosmosRepository(cosmosClient, Options.Create(options));
+        var ontologies = new OntologyVersionCosmosRepository(cosmosClient, Options.Create(options));
+        var space = await spaces.CreateAsync(
+            new KnowledgeSpaceCreation("Product", "review", "owner-001"));
+        var version = CreateVersion(space.KnowledgeSpaceId);
+        var assessment = new OntologyCompatibilityAssessment
+        {
+            Id = "assessment-001",
+            KnowledgeSpaceId = space.KnowledgeSpaceId,
+            OntologyVersionId = version.OntologyVersionId,
+            IsApproved = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = "owner-001"
+        };
+        var approval = new OntologyApproval
+        {
+            Id = "approval-001",
+            KnowledgeSpaceId = space.KnowledgeSpaceId,
+            OntologyVersionId = version.OntologyVersionId,
+            CompatibilityAssessmentId = assessment.Id,
+            ActorId = "owner-001",
+            Authority = "Ontology Manager",
+            IsApproved = true,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        await ontologies.CreateVersionAsync(version);
+        await Assert.ThrowsAsync<OntologyControlRecordConflictException>(
+            () => ontologies.CreateVersionAsync(version));
+        await ontologies.CreateCompatibilityAssessmentAsync(assessment);
+        await ontologies.CreateApprovalAsync(approval);
+        var activated = await ontologies.ActivateAsync(
+            new OntologyActivationRequest(
+                space.KnowledgeSpaceId,
+                version.OntologyVersionId,
+                version.PayloadDigest,
+                approval.Id,
+                null,
+                null,
+                "activation-001"));
+
+        Assert.AreEqual(version.OntologyVersionId, activated.ActiveOntologyVersionId);
+        Assert.AreEqual(version.PayloadDigest, activated.ActiveOntologyDigest);
+
+        await Assert.ThrowsAsync<OntologyActivationConflictException>(
+            () => ontologies.ActivateAsync(
+                new OntologyActivationRequest(
+                    space.KnowledgeSpaceId,
+                    version.OntologyVersionId,
+                    version.PayloadDigest,
+                    approval.Id,
+                    null,
+                    null,
+                    "activation-stale")));
+
+        var current = await spaces.GetAsync(space.KnowledgeSpaceId);
+        Assert.IsNotNull(current);
+        Assert.AreEqual(version.OntologyVersionId, current.ActiveOntologyVersionId);
+        Assert.AreEqual(version.PayloadDigest, current.ActiveOntologyDigest);
+
+        var container = cosmosClient.GetContainer(options.DatabaseName, options.ContainerName);
+        using var response = await container.ReadItemStreamAsync(
+            "activation-001",
+            new PartitionKey(space.KnowledgeSpaceId));
+        Assert.IsTrue(response.IsSuccessStatusCode);
+
+        using var evidence = await JsonDocument.ParseAsync(response.Content);
+        Assert.AreEqual(
+            OntologyControlRecordTypes.ActivationEvidence,
+            evidence.RootElement.GetProperty("recordType").GetString());
+    }
+
+    private static OntologyVersionEnvelope CreateVersion(string knowledgeSpaceId)
+    {
+        var payload = new OntologyPayload
+        {
+            OntologyId = "ontology-product",
+            OntologyVersionId = "ontology-product-v1",
+            Title = "Product knowledge",
+            Description = "Structures product decisions.",
+            DocumentTypes =
+            [
+                new OntologyDocumentType(
+                    "decision-record",
+                    "A decision.",
+                    Parse(
+                        """
+                        {
+                          "$schema": "https://json-schema.org/draft/2020-12/schema",
+                          "type": "object"
+                        }
+                        """))
+            ],
+            Hierarchy = new OntologyHierarchy(["decision-record"], []),
+            RelationshipTypes = [],
+            Rules = [],
+            FilterableFields = [],
+            TemplateReferences = []
+        };
+        return new OntologyVersionEnvelope
+        {
+            Id = payload.OntologyVersionId,
+            RecordType = "ontologyVersion",
+            KnowledgeSpaceId = knowledgeSpaceId,
+            OntologyId = payload.OntologyId,
+            OntologyVersionId = payload.OntologyVersionId,
+            SchemaVersion = "1",
+            Payload = payload,
+            PayloadDigest = OntologyPayloadDigest.Compute(payload),
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = "owner-001"
+        };
+    }
+
+    private static JsonElement Parse(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
 }
