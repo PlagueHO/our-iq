@@ -234,6 +234,13 @@ public sealed record KnowledgeSpaceControlRecord
                 $"The lifecycle state '{LifecycleState}' is not supported.");
         }
 
+        if (string.IsNullOrWhiteSpace(ActiveOntologyVersionId)
+            != string.IsNullOrWhiteSpace(ActiveOntologyDigest))
+        {
+            throw new KnowledgeSpaceControlRecordValidationException(
+                "The active ontology version and digest must be set together.");
+        }
+
         var duplicateGrant = RoleGrants
             .GroupBy(grant => (grant.UserId, grant.Role))
             .FirstOrDefault(grants => grants.Count() > 1);

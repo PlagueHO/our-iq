@@ -39,6 +39,12 @@ public sealed record OntologyVersionEnvelope
                 "The ontology version envelope record type must be 'ontologyVersion'.");
         }
 
+        if (!string.Equals(Id, OntologyVersionId, StringComparison.Ordinal))
+        {
+            throw new OntologyPayloadValidationException(
+                "The ontology version envelope identifier must equal its ontology version identifier.");
+        }
+
         ArgumentNullException.ThrowIfNull(Payload);
         Payload.Validate(new OntologyIdentity(OntologyId, OntologyVersionId));
 
