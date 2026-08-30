@@ -2,14 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://our-iq.dev/contracts/private/v1.0/private-deterministic-tools",
   "title": "Our IQ private deterministic tool contract",
-  "description": "Versioned request envelope for authorized Domain Agent deterministic tools.",
+  "description": "Versioned request and response envelopes for authorized Domain Agent deterministic tools.",
   "type": "object",
   "required": [
     "contractVersion",
     "operation",
-    "knowledgeSpaceId",
-    "identity",
-    "executionContext"
+    "knowledgeSpaceId"
   ],
   "properties": {
     "contractVersion": {
@@ -46,10 +44,340 @@
       ]
     },
     "knowledgeSpaceId": {
+      "$ref": "#/$defs/opaqueId"
+    },
+    "identity": {
+      "$ref": "#/$defs/domainAgentIdentity"
+    },
+    "executionContext": {
+      "$ref": "#/$defs/executionContext"
+    },
+    "arguments": {
+      "type": "object"
+    },
+    "outcome": {
+      "enum": [
+        "completed",
+        "error"
+      ]
+    },
+    "correlationId": {
+      "$ref": "#/$defs/opaqueId"
+    },
+    "pagination": {
+      "const": "notApplicable"
+    },
+    "result": {
+      "type": "object"
+    },
+    "error": {
+      "$ref": "#/$defs/error"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "identity",
+        "executionContext",
+        "arguments"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "outcome"
+            ]
+          },
+          {
+            "required": [
+              "result"
+            ]
+          },
+          {
+            "required": [
+              "error"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "required": [
+        "outcome",
+        "correlationId",
+        "pagination"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "identity"
+            ]
+          },
+          {
+            "required": [
+              "executionContext"
+            ]
+          },
+          {
+            "required": [
+              "arguments"
+            ]
+          }
+        ]
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "outcome": {
+              "const": "completed"
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "not": {
+            "required": [
+              "error"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "error"
+            }
+          },
+          "required": [
+            "error"
+          ],
+          "not": {
+            "required": [
+              "result"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "get_space"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "$ref": "#/$defs/ontologyAgentIdentity"
+          },
+          "arguments": {
+            "$ref": "#/$defs/emptyArguments"
+          },
+          "result": {
+            "$ref": "#/$defs/getSpaceResult"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "get_ontology"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "$ref": "#/$defs/ontologyAgentIdentity"
+          },
+          "arguments": {
+            "$ref": "#/$defs/ontologyVersionArguments"
+          },
+          "result": {
+            "$ref": "#/$defs/getOntologyResult"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "list_all_templates"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "$ref": "#/$defs/ontologyAgentIdentity"
+          },
+          "arguments": {
+            "$ref": "#/$defs/ontologyVersionArguments"
+          },
+          "result": {
+            "$ref": "#/$defs/listTemplatesResult"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "get_template"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "$ref": "#/$defs/ontologyAgentIdentity"
+          },
+          "arguments": {
+            "$ref": "#/$defs/getTemplateArguments"
+          },
+          "result": {
+            "$ref": "#/$defs/getTemplateResult"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "stage_ontology_version"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "$ref": "#/$defs/ontologyAgentIdentity"
+          },
+          "arguments": {
+            "$ref": "#/$defs/stageOntologyVersionArguments"
+          },
+          "result": {
+            "$ref": "#/$defs/stageOntologyVersionResult"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "validate_ontology_compatibility"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "$ref": "#/$defs/ontologyAgentIdentity"
+          },
+          "arguments": {
+            "$ref": "#/$defs/validateCompatibilityArguments"
+          },
+          "result": {
+            "$ref": "#/$defs/validateCompatibilityResult"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "record_approval"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "$ref": "#/$defs/ontologyAgentIdentity"
+          },
+          "arguments": {
+            "$ref": "#/$defs/recordApprovalArguments"
+          },
+          "result": {
+            "$ref": "#/$defs/recordApprovalResult"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "activate_ontology_version"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "$ref": "#/$defs/ontologyAgentIdentity"
+          },
+          "arguments": {
+            "$ref": "#/$defs/activateOntologyVersionArguments"
+          },
+          "result": {
+            "$ref": "#/$defs/activateOntologyVersionResult"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "opaqueId": {
       "type": "string",
       "minLength": 1
     },
-    "identity": {
+    "nullableOpaqueId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "nullableDigest": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/digest"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lifecycleState": {
+      "enum": [
+        "draft",
+        "pending",
+        "active",
+        "readonly",
+        "maintenance",
+        "retired",
+        "deleting",
+        "deleted"
+      ]
+    },
+    "domainAgentIdentity": {
       "type": "object",
       "required": [
         "initiatingUserId",
@@ -59,20 +387,54 @@
       ],
       "properties": {
         "initiatingUserId": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/opaqueId"
         },
         "actingAgentId": {
-          "type": "string",
-          "minLength": 1
+          "enum": [
+            "agent-ontology",
+            "agent-contribution",
+            "agent-retrieval"
+          ]
         },
         "agentDefinitionVersion": {
           "type": "string",
           "pattern": "^[0-9]+\\.[0-9]+$"
         },
         "requiredCapability": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ontologyAgentIdentity": {
+      "type": "object",
+      "required": [
+        "initiatingUserId",
+        "actingAgentId",
+        "agentDefinitionVersion",
+        "requiredCapability"
+      ],
+      "properties": {
+        "initiatingUserId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "actingAgentId": {
+          "const": "agent-ontology"
+        },
+        "agentDefinitionVersion": {
+          "const": "1.0"
+        },
+        "requiredCapability": {
+          "enum": [
+            "get_space",
+            "get_ontology",
+            "list_all_templates",
+            "get_template",
+            "stage_ontology_version",
+            "validate_ontology_compatibility",
+            "record_approval",
+            "activate_ontology_version"
+          ]
         }
       },
       "additionalProperties": false
@@ -88,57 +450,688 @@
         "ontologyVersion",
         "ontologyDigest",
         "mutationPolicy",
+        "mutationPolicyVersion",
         "canonicalHeadVersion"
       ],
       "properties": {
         "executionId": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/opaqueId"
         },
         "traceId": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/opaqueId"
         },
         "correlationId": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/opaqueId"
         },
         "knowledgeSpaceId": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/opaqueId"
         },
         "lifecycleState": {
-          "enum": [
-            "draft",
-            "pending",
-            "active",
-            "readonly",
-            "maintenance",
-            "retired"
-          ]
+          "$ref": "#/$defs/lifecycleState"
         },
         "ontologyVersion": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/nullableOpaqueId"
         },
         "ontologyDigest": {
-          "type": "string",
-          "pattern": "^[a-f0-9]{64}$"
+          "$ref": "#/$defs/nullableDigest"
         },
         "mutationPolicy": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/opaqueId"
+        },
+        "mutationPolicyVersion": {
+          "$ref": "#/$defs/opaqueId"
         },
         "canonicalHeadVersion": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "#/$defs/nullableOpaqueId"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "ontologyVersion": {
+              "type": "string"
+            },
+            "ontologyDigest": {
+              "$ref": "#/$defs/digest"
+            }
+          }
+        },
+        {
+          "properties": {
+            "ontologyVersion": {
+              "type": "null"
+            },
+            "ontologyDigest": {
+              "type": "null"
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "category",
+        "message",
+        "remediation"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "authentication_required",
+            "authorization_denied",
+            "space_state_conflict",
+            "ontology_not_active",
+            "validation_failed",
+            "policy_rejected",
+            "approval_expired",
+            "replan_required",
+            "contract_version_unsupported"
+          ]
+        },
+        "category": {
+          "enum": [
+            "authentication",
+            "authorization",
+            "conflict",
+            "validation",
+            "policy",
+            "state"
+          ]
+        },
+        "message": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "remediation": {
+          "$ref": "#/$defs/opaqueId"
         }
       },
       "additionalProperties": false
     },
-    "arguments": {
-      "type": "object"
+    "emptyArguments": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "ontologyVersionArguments": {
+      "type": "object",
+      "properties": {
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
+    },
+    "getTemplateArguments": {
+      "type": "object",
+      "required": [
+        "templateId",
+        "revisionId"
+      ],
+      "properties": {
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "templateId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "revisionId": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stageOntologyVersionArguments": {
+      "type": "object",
+      "required": [
+        "proposalId",
+        "payload"
+      ],
+      "properties": {
+        "proposalId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "payload": {
+          "$ref": "#/$defs/ontologyPayload"
+        },
+        "sourceReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/opaqueId"
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "validateCompatibilityArguments": {
+      "type": "object",
+      "required": [
+        "assessmentId",
+        "ontologyVersionId"
+      ],
+      "properties": {
+        "assessmentId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
+    },
+    "recordApprovalArguments": {
+      "type": "object",
+      "required": [
+        "approvalId",
+        "ontologyVersionId",
+        "compatibilityAssessmentId",
+        "decision"
+      ],
+      "properties": {
+        "approvalId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "compatibilityAssessmentId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "decision": {
+          "enum": [
+            "approve",
+            "reject"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "activateOntologyVersionArguments": {
+      "type": "object",
+      "required": [
+        "ontologyVersionId",
+        "payloadDigest",
+        "approvalId",
+        "activationEvidenceId",
+        "expectedActiveOntologyVersionId",
+        "expectedActiveOntologyDigest"
+      ],
+      "properties": {
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "payloadDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "approvalId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "activationEvidenceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "expectedActiveOntologyVersionId": {
+          "$ref": "#/$defs/nullableOpaqueId"
+        },
+        "expectedActiveOntologyDigest": {
+          "$ref": "#/$defs/nullableDigest"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "expectedActiveOntologyVersionId": {
+              "type": "string"
+            },
+            "expectedActiveOntologyDigest": {
+              "$ref": "#/$defs/digest"
+            }
+          }
+        },
+        {
+          "properties": {
+            "expectedActiveOntologyVersionId": {
+              "type": "null"
+            },
+            "expectedActiveOntologyDigest": {
+              "type": "null"
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "ontologyPayload": {
+      "type": "object",
+      "required": [
+        "ontologyId",
+        "ontologyVersionId",
+        "title",
+        "description",
+        "documentTypes",
+        "hierarchy",
+        "relationshipTypes",
+        "rules",
+        "filterableFields",
+        "templateReferences"
+      ],
+      "properties": {
+        "ontologyId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "title": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "description": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "documentTypes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "documentTypeId",
+              "description",
+              "frontMatterSchema"
+            ],
+            "properties": {
+              "documentTypeId": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "description": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "frontMatterSchema": {
+                "type": "object"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "hierarchy": {
+          "type": "object",
+          "required": [
+            "roots",
+            "allowedParents"
+          ],
+          "properties": {
+            "roots": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "uniqueItems": true
+            },
+            "allowedParents": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "relationshipTypes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "relationshipTypeId",
+              "sourceDocumentTypes",
+              "targetDocumentTypes"
+            ],
+            "properties": {
+              "relationshipTypeId": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "sourceDocumentTypes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/opaqueId"
+                }
+              },
+              "targetDocumentTypes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/opaqueId"
+                }
+              },
+              "maximumTargets": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "code",
+              "level",
+              "rationale"
+            ],
+            "properties": {
+              "code": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "level": {
+                "enum": [
+                  "required",
+                  "recommended",
+                  "informational"
+                ]
+              },
+              "rationale": {
+                "$ref": "#/$defs/opaqueId"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "filterableFields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "valueType"
+            ],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/opaqueId"
+              },
+              "valueType": {
+                "$ref": "#/$defs/opaqueId"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "templateReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/templateReference"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "templateReference": {
+      "type": "object",
+      "required": [
+        "templateId",
+        "revisionId",
+        "mediaType",
+        "contentDigest",
+        "assetReference"
+      ],
+      "properties": {
+        "templateId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "revisionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "mediaType": {
+          "const": "text/markdown"
+        },
+        "contentDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "assetReference": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
+    },
+    "getSpaceResult": {
+      "type": "object",
+      "required": [
+        "knowledgeSpaceId",
+        "displayName",
+        "lifecycleState",
+        "mutationPolicy",
+        "mutationPolicyVersion",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "displayName": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "lifecycleState": {
+          "$ref": "#/$defs/lifecycleState"
+        },
+        "mutationPolicy": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "mutationPolicyVersion": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "activeOntologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "activeOntologyDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "canonicalHeadVersion": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ontologyVersion": {
+      "type": "object",
+      "required": [
+        "id",
+        "recordType",
+        "knowledgeSpaceId",
+        "ontologyId",
+        "ontologyVersionId",
+        "schemaVersion",
+        "payload",
+        "payloadDigest",
+        "createdAt",
+        "createdBy",
+        "sourceReferences"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "recordType": {
+          "const": "ontologyVersion"
+        },
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ontologyId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "payload": {
+          "$ref": "#/$defs/ontologyPayload"
+        },
+        "payloadDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "sourceReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/opaqueId"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "getOntologyResult": {
+      "type": "object",
+      "required": [
+        "ontology"
+      ],
+      "properties": {
+        "ontology": {
+          "$ref": "#/$defs/ontologyVersion"
+        }
+      },
+      "additionalProperties": false
+    },
+    "listTemplatesResult": {
+      "type": "object",
+      "required": [
+        "ontologyVersionId",
+        "templates"
+      ],
+      "properties": {
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/templateReference"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "getTemplateResult": {
+      "type": "object",
+      "required": [
+        "ontologyVersionId",
+        "template"
+      ],
+      "properties": {
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "template": {
+          "$ref": "#/$defs/templateReference"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stageOntologyVersionResult": {
+      "type": "object",
+      "required": [
+        "ontologyVersionId",
+        "payloadDigest",
+        "proposalId"
+      ],
+      "properties": {
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "payloadDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "proposalId": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
+    },
+    "validateCompatibilityResult": {
+      "type": "object",
+      "required": [
+        "assessmentId",
+        "compatible",
+        "requiresMigration",
+        "findings"
+      ],
+      "properties": {
+        "assessmentId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "compatible": {
+          "type": "boolean"
+        },
+        "requiresMigration": {
+          "type": "boolean"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/opaqueId"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "recordApprovalResult": {
+      "type": "object",
+      "required": [
+        "approvalId",
+        "approved"
+      ],
+      "properties": {
+        "approvalId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "approved": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "activateOntologyVersionResult": {
+      "type": "object",
+      "required": [
+        "ontologyVersionId",
+        "payloadDigest",
+        "lifecycleState",
+        "activationEvidenceId"
+      ],
+      "properties": {
+        "ontologyVersionId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "payloadDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "lifecycleState": {
+          "const": "active"
+        },
+        "activationEvidenceId": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
+      "additionalProperties": false
     }
-  },
-  "additionalProperties": false
+  }
 }

@@ -138,6 +138,7 @@ public sealed class ContractSchemaTests
                 "ontologyVersion": "ontology-product-v1",
                 "ontologyDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                 "mutationPolicy": "confirmation",
+                "mutationPolicyVersion": "1.0",
                 "canonicalHeadVersion": "head-001"
               },
               "arguments": {
@@ -235,6 +236,7 @@ public sealed class ContractSchemaTests
                 "ontologyVersion": "ontology-product-v1",
                 "ontologyDigest": "not-a-digest",
                 "mutationPolicy": "confirmation",
+                "mutationPolicyVersion": "1.0",
                 "canonicalHeadVersion": "head-001"
               }
             }

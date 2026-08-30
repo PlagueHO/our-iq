@@ -18,6 +18,7 @@ public static class KnowledgeSpacePersistenceServiceCollectionExtensions
         services.AddSingleton<IKnowledgeSpaceControlRecordRepository, KnowledgeSpaceCosmosRepository>();
         services.AddSingleton<IOntologyVersionRepository, OntologyVersionCosmosRepository>();
         services.AddSingleton<IExecutionContextSnapshotRepository, ExecutionContextSnapshotCosmosRepository>();
+        services.AddSingleton<OntologyAgentToolService>();
         return services;
     }
 }

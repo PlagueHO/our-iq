@@ -16,6 +16,22 @@ public sealed class OntologyVersionCosmosRepository(
 {
     private readonly KnowledgeSpaceCosmosOptions cosmosOptions = options.Value;
 
+    public async Task<OntologyVersionEnvelope?> GetVersionAsync(
+        string ontologyVersionId,
+        string knowledgeSpaceId,
+        CancellationToken cancellationToken = default)
+    {
+        var container = await GetContainerAsync(cancellationToken);
+        var version = await TryReadImmutableAsync<OntologyVersionEnvelope>(
+            container,
+            ontologyVersionId,
+            knowledgeSpaceId,
+            "ontologyVersion",
+            cancellationToken);
+        version?.Validate();
+        return version;
+    }
+
     public Task<OntologyVersionEnvelope> CreateVersionAsync(
         OntologyVersionEnvelope version,
         CancellationToken cancellationToken = default)
@@ -58,6 +74,22 @@ public sealed class OntologyVersionCosmosRepository(
             cancellationToken);
     }
 
+    public async Task<OntologyCompatibilityAssessment?> GetCompatibilityAssessmentAsync(
+        string assessmentId,
+        string knowledgeSpaceId,
+        CancellationToken cancellationToken = default)
+    {
+        var container = await GetContainerAsync(cancellationToken);
+        var assessment = await TryReadImmutableAsync<OntologyCompatibilityAssessment>(
+            container,
+            assessmentId,
+            knowledgeSpaceId,
+            OntologyControlRecordTypes.CompatibilityAssessment,
+            cancellationToken);
+        assessment?.Validate();
+        return assessment;
+    }
+
     public Task<OntologyApproval> CreateApprovalAsync(
         OntologyApproval approval,
         CancellationToken cancellationToken = default)
@@ -70,6 +102,22 @@ public sealed class OntologyVersionCosmosRepository(
             approval.KnowledgeSpaceId,
             OntologyControlRecordTypes.Approval,
             cancellationToken);
+    }
+
+    public async Task<OntologyApproval?> GetApprovalAsync(
+        string approvalId,
+        string knowledgeSpaceId,
+        CancellationToken cancellationToken = default)
+    {
+        var container = await GetContainerAsync(cancellationToken);
+        var approval = await TryReadImmutableAsync<OntologyApproval>(
+            container,
+            approvalId,
+            knowledgeSpaceId,
+            OntologyControlRecordTypes.Approval,
+            cancellationToken);
+        approval?.Validate();
+        return approval;
     }
 
     public async Task<KnowledgeSpaceControlRecord> ActivateAsync(
@@ -121,6 +169,7 @@ public sealed class OntologyVersionCosmosRepository(
         {
             ActiveOntologyVersionId = version.OntologyVersionId,
             ActiveOntologyDigest = version.PayloadDigest,
+            LifecycleState = KnowledgeSpaceLifecycleStates.Active,
             UpdatedAt = activatedAt,
             ETag = null
         };
@@ -210,6 +259,36 @@ public sealed class OntologyVersionCosmosRepository(
         }
     }
 
+    private static async Task<T?> TryReadImmutableAsync<T>(
+        Container container,
+        string recordId,
+        string knowledgeSpaceId,
+        string recordType,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        OntologyControlRecordValidator.ValidateRequired(recordId, nameof(recordId));
+        OntologyControlRecordValidator.ValidateRequired(
+            knowledgeSpaceId,
+            nameof(knowledgeSpaceId));
+
+        try
+        {
+            var response = await container.ReadItemAsync<OntologyControlRecordDocument>(
+                recordId,
+                new PartitionKey(knowledgeSpaceId),
+                cancellationToken: cancellationToken);
+            var document = response.Resource;
+            return string.Equals(document.RecordType, recordType, StringComparison.Ordinal)
+                ? document.ToDomain<T>()
+                : null;
+        }
+        catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
     private async Task<Container> GetContainerAsync(CancellationToken cancellationToken)
     {
         ValidateConfiguration();
@@ -261,6 +340,15 @@ public sealed class OntologyVersionCosmosRepository(
         version.Validate();
         approval.Validate();
         assessment.Validate();
+        if (!string.Equals(
+                current.LifecycleState,
+                KnowledgeSpaceLifecycleStates.Pending,
+                StringComparison.Ordinal))
+        {
+            throw new KnowledgeSpaceStateConflictException(
+                current.LifecycleState,
+                KnowledgeSpaceLifecycleStates.Active);
+        }
 
         if (version.OntologyVersionId != request.OntologyVersionId
             || version.PayloadDigest != request.PayloadDigest
