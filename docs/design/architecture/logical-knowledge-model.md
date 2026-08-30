@@ -107,6 +107,28 @@ relationship may target a canonical item, an external reference defined by the
 ontology, or an explicitly unresolved concept. This permits incomplete and
 evolving knowledge to be represented honestly.
 
+### Canonical serialization and normalization
+
+The initial canonical Markdown codec requires one YAML front-matter mapping
+between `---` delimiters. It emits the declared top-level fields in the order
+shown above, with `primary_parent` omitted when absent and empty
+`relationships`, `metadata`, and `extensions` sections emitted explicitly.
+Front-matter mappings and sequences must contain JSON-compatible values. Numeric
+values must be representable exactly by the .NET `Int64` or `Decimal` types.
+YAML anchors, aliases, explicit tags, duplicate mapping keys, and undeclared
+top-level fields are rejected so a revision has one unambiguous interpretation.
+
+Parsing and serialization normalize CRLF and bare CR line endings in the
+Markdown body to LF. All other body content is preserved, including blank
+lines, trailing spaces, thematic breaks, and whether the body ends with a
+newline. Front-matter formatting is deterministic rather than byte-preserving;
+parse-serialize-parse preserves its typed values.
+
+The initial codec supports relationship targets containing exactly one
+`knowledge_item_id` or `unresolved_concept`. The logical model continues to
+permit ontology-defined external references, but their serialized shape is
+deferred until that contract is explicitly defined rather than inferred here.
+
 ## Ontology rule levels
 
 Each ontology rule declares its enforcement level and a human-readable
