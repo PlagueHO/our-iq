@@ -7,6 +7,7 @@
     <PackageReference Include="MSTest" PrivateAssets="all" />
     <PackageReference Include="JsonSchema.Net" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" PrivateAssets="all" />
+    <PackageReference Include="YamlDotNet" PrivateAssets="all" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Agents.AI" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Agents.AI.Foundry" PrivateAssets="all" />

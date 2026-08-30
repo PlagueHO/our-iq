@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <Content Include="..\..\..\contracts\**\*" Link="contracts\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="TestData\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

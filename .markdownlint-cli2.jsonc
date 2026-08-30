@@ -6,12 +6,14 @@
     "**/*.md",
     "!**/node_modules/**",
     "!**/.vitepress/**",
-    "!**/dist/**"
+    "!**/dist/**",
+    "!**/tests/**/TestData/**"
   ],
   "ignores": [
     "**/node_modules/**",
     "**/.vitepress/**",
-    "**/dist/**"
+    "**/dist/**",
+    "**/tests/**/TestData/**"
   ],
   "fix": false
 }
