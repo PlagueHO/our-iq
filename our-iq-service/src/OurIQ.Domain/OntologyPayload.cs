@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Json.Schema;
 
 namespace OurIQ.Domain;
@@ -63,6 +64,7 @@ public sealed record OntologyPayload
 
     public IReadOnlyList<OntologyTemplateReference> TemplateReferences { get; init; } = [];
 
+    [JsonIgnore]
     public OntologyIdentity Identity => new(OntologyId, OntologyVersionId);
 
     public void Validate(OntologyIdentity? expectedIdentity = null)

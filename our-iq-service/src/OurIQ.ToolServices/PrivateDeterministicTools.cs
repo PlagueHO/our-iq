@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -10,7 +11,11 @@ public static class PrivateDeterministicTools
 {
     [McpServerTool(Name = "get_space")]
     [Description("Read a knowledge-space control record.")]
-    public static CallToolResult GetSpace(JsonElement request) => Unsupported("get_space");
+    public static Task<CallToolResult> GetSpace(
+        JsonElement request,
+        [FromServices] OntologyAgentToolService service,
+        CancellationToken cancellationToken) =>
+        service.ExecuteAsync("get_space", request, cancellationToken);
 
     [McpServerTool(Name = "list_spaces")]
     [Description("List authorized knowledge-space control records.")]
@@ -22,29 +27,51 @@ public static class PrivateDeterministicTools
 
     [McpServerTool(Name = "get_ontology")]
     [Description("Read an immutable ontology version.")]
-    public static CallToolResult GetOntology(JsonElement request) => Unsupported("get_ontology");
+    public static Task<CallToolResult> GetOntology(
+        JsonElement request,
+        [FromServices] OntologyAgentToolService service,
+        CancellationToken cancellationToken) =>
+        service.ExecuteAsync("get_ontology", request, cancellationToken);
 
     [McpServerTool(Name = "list_all_templates")]
     [Description("List private ontology templates.")]
-    public static CallToolResult ListAllTemplates(JsonElement request) => Unsupported("list_all_templates");
+    public static Task<CallToolResult> ListAllTemplates(
+        JsonElement request,
+        [FromServices] OntologyAgentToolService service,
+        CancellationToken cancellationToken) =>
+        service.ExecuteAsync("list_all_templates", request, cancellationToken);
 
     [McpServerTool(Name = "get_template")]
     [Description("Read a private ontology template.")]
-    public static CallToolResult GetTemplate(JsonElement request) => Unsupported("get_template");
+    public static Task<CallToolResult> GetTemplate(
+        JsonElement request,
+        [FromServices] OntologyAgentToolService service,
+        CancellationToken cancellationToken) =>
+        service.ExecuteAsync("get_template", request, cancellationToken);
 
     [McpServerTool(Name = "stage_ontology_version")]
     [Description("Stage an immutable ontology version.")]
-    public static CallToolResult StageOntologyVersion(JsonElement request) => Unsupported("stage_ontology_version");
+    public static Task<CallToolResult> StageOntologyVersion(
+        JsonElement request,
+        [FromServices] OntologyAgentToolService service,
+        CancellationToken cancellationToken) =>
+        service.ExecuteAsync("stage_ontology_version", request, cancellationToken);
 
     [McpServerTool(Name = "validate_ontology_compatibility")]
     [Description("Validate ontology compatibility.")]
-    public static CallToolResult ValidateOntologyCompatibility(JsonElement request) =>
-        Unsupported("validate_ontology_compatibility");
+    public static Task<CallToolResult> ValidateOntologyCompatibility(
+        JsonElement request,
+        [FromServices] OntologyAgentToolService service,
+        CancellationToken cancellationToken) =>
+        service.ExecuteAsync("validate_ontology_compatibility", request, cancellationToken);
 
     [McpServerTool(Name = "activate_ontology_version")]
     [Description("Activate an approved ontology version.")]
-    public static CallToolResult ActivateOntologyVersion(JsonElement request) =>
-        Unsupported("activate_ontology_version");
+    public static Task<CallToolResult> ActivateOntologyVersion(
+        JsonElement request,
+        [FromServices] OntologyAgentToolService service,
+        CancellationToken cancellationToken) =>
+        service.ExecuteAsync("activate_ontology_version", request, cancellationToken);
 
     [McpServerTool(Name = "stage_source_asset")]
     [Description("Stage an immutable source asset.")]
@@ -109,7 +136,11 @@ public static class PrivateDeterministicTools
 
     [McpServerTool(Name = "record_approval")]
     [Description("Record approval evidence.")]
-    public static CallToolResult RecordApproval(JsonElement request) => Unsupported("record_approval");
+    public static Task<CallToolResult> RecordApproval(
+        JsonElement request,
+        [FromServices] OntologyAgentToolService service,
+        CancellationToken cancellationToken) =>
+        service.ExecuteAsync("record_approval", request, cancellationToken);
 
     [McpServerTool(Name = "validate_execution_grant")]
     [Description("Validate a bounded execution grant.")]

@@ -40,6 +40,8 @@ public sealed record OntologyCompatibilityAssessment
 
     public bool IsApproved { get; init; }
 
+    public bool RequiresMigration { get; init; }
+
     public DateTimeOffset CreatedAt { get; init; }
 
     public string CreatedBy { get; init; } = string.Empty;
@@ -54,6 +56,12 @@ public sealed record OntologyCompatibilityAssessment
             OntologyVersionId,
             CreatedAt,
             CreatedBy);
+
+        if (IsApproved && RequiresMigration)
+        {
+            throw new OntologyPayloadValidationException(
+                "A compatibility assessment that requires migration cannot be approved.");
+        }
     }
 }
 

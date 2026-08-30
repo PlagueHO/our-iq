@@ -111,8 +111,11 @@ public sealed class KnowledgeSpaceCosmosRepositoryComponentTests
             new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway });
         var spaces = new KnowledgeSpaceCosmosRepository(cosmosClient, Options.Create(options));
         var ontologies = new OntologyVersionCosmosRepository(cosmosClient, Options.Create(options));
-        var space = await spaces.CreateAsync(
+        var draftSpace = await spaces.CreateAsync(
             new KnowledgeSpaceCreation("Product", "review", "owner-001"));
+        var space = await spaces.UpdateAsync(
+            draftSpace.TransitionTo(KnowledgeSpaceLifecycleStates.Pending, "owner-001"),
+            draftSpace.ETag!);
         var version = CreateVersion(space.KnowledgeSpaceId);
         var assessment = new OntologyCompatibilityAssessment
         {
@@ -136,10 +139,25 @@ public sealed class KnowledgeSpaceCosmosRepositoryComponentTests
         };
 
         await ontologies.CreateVersionAsync(version);
+        Assert.AreEqual(
+            version,
+            await ontologies.GetVersionAsync(
+                version.OntologyVersionId,
+                version.KnowledgeSpaceId));
         await Assert.ThrowsAsync<OntologyControlRecordConflictException>(
             () => ontologies.CreateVersionAsync(version));
         await ontologies.CreateCompatibilityAssessmentAsync(assessment);
+        Assert.AreEqual(
+            assessment,
+            await ontologies.GetCompatibilityAssessmentAsync(
+                assessment.Id,
+                assessment.KnowledgeSpaceId));
         await ontologies.CreateApprovalAsync(approval);
+        Assert.AreEqual(
+            approval,
+            await ontologies.GetApprovalAsync(
+                approval.Id,
+                approval.KnowledgeSpaceId));
         var activated = await ontologies.ActivateAsync(
             new OntologyActivationRequest(
                 space.KnowledgeSpaceId,

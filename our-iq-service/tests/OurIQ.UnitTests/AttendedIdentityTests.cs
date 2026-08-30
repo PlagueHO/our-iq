@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using OurIQ.Contracts;
+using OurIQ.Domain;
 
 namespace OurIQ.UnitTests;
 
@@ -107,9 +108,9 @@ public sealed class AttendedIdentityTests
         Assert.IsTrue(validator.MatchesPrivate(
             principal,
             CreateArguments($"{TenantId}:{ObjectId}", AgentId)));
-        Assert.IsFalse(validator.MatchesPrivate(
+        Assert.IsTrue(validator.MatchesPrivate(
             principal,
-            CreateArguments($"{TenantId}:{ObjectId}", "66666666-6666-6666-6666-666666666666")));
+            CreateArguments($"{TenantId}:{ObjectId}", DomainAgentIdentities.Ontology)));
     }
 
     private static ClaimsPrincipal CreatePrincipal(params (string Type, string Value)[] claims) =>

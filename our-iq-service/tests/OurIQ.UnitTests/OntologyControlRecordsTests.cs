@@ -34,6 +34,23 @@ public sealed class OntologyControlRecordsTests
             () => (record with { ActiveOntologyVersionId = "ontology-product-v1" }).Validate());
     }
 
+    [TestMethod]
+    public void CompatibilityAssessmentCannotApproveARequiredMigration()
+    {
+        var assessment = new OntologyCompatibilityAssessment
+        {
+            Id = "assessment-001",
+            KnowledgeSpaceId = "ks-product",
+            OntologyVersionId = "ontology-v2",
+            IsApproved = true,
+            RequiresMigration = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = "ontology-manager-001"
+        };
+
+        Assert.Throws<OntologyPayloadValidationException>(assessment.Validate);
+    }
+
     private static OntologyApproval CreateApproval() =>
         new()
         {

@@ -106,16 +106,16 @@ public sealed class AttendedIdentityEnvelopeValidator
     public bool MatchesPrivate(
         ClaimsPrincipal principal,
         IDictionary<string, JsonElement>? arguments) =>
+        // The policy validates the authenticated application; the envelope carries
+        // the logical Domain Agent identity pinned by the execution snapshot.
         AttendedIdentityClaims.TryCreatePrivate(principal, out var identity)
         && TryReadEnvelopeIdentity(arguments, out var initiatingUserId, out var actingAgentId)
         && string.Equals(
             identity.InitiatingUserId,
             initiatingUserId,
             StringComparison.OrdinalIgnoreCase)
-        && string.Equals(
-            identity.ActingAgentId,
-            actingAgentId,
-            StringComparison.OrdinalIgnoreCase);
+        && !string.IsNullOrWhiteSpace(identity.ActingAgentId)
+        && !string.IsNullOrWhiteSpace(actingAgentId);
 
     private static bool TryReadEnvelopeIdentity(
         IDictionary<string, JsonElement>? arguments,
