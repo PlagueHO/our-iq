@@ -10,29 +10,31 @@ public sealed record IdempotencyIdentity(
     string KnowledgeSpaceId,
     string RequestFingerprint)
 {
+    public const string RecordIdPrefix = "ouriq-replay-";
+
     public static IdempotencyIdentity Create(
         string operation,
         string initiatingUserId,
         string actingAgentId,
         JsonElement request)
     {
-        _ = JsonCanonicalizer.Canonicalize(request);
+        _ = JsonCanonicalizer.CanonicalizeLosslessNumbers(request);
         var key = request.GetProperty("idempotencyKey").GetString();
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         var spaceId = request.GetProperty("knowledgeSpaceId").GetString();
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         var scope = JsonSerializer.SerializeToElement(new[]
         {
-            operation, initiatingUserId.ToLowerInvariant(), actingAgentId, key
+            operation, CallerIdentity.NormalizeUserId(initiatingUserId), actingAgentId, key
         });
         var normalized = JsonNode.Parse(request.GetRawText())!.AsObject();
         normalized.Remove("idempotencyKey");
         normalized["executionContext"]!.AsObject().Remove("correlationId");
-        normalized["identity"]!["initiatingUserId"] = initiatingUserId.ToLowerInvariant();
+        normalized["identity"]!["initiatingUserId"] = CallerIdentity.NormalizeUserId(initiatingUserId);
         return new(
-            $"ouriq-replay-{Hash(JsonCanonicalizer.Canonicalize(scope))}",
+            $"{RecordIdPrefix}{Hash(JsonCanonicalizer.Canonicalize(scope))}",
             spaceId,
-            Hash(JsonCanonicalizer.Canonicalize(
+            Hash(JsonCanonicalizer.CanonicalizeLosslessNumbers(
                 JsonSerializer.SerializeToElement(normalized))));
     }
 

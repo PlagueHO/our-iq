@@ -12,12 +12,54 @@ public sealed class IdempotencyTests
     {
         var first = Request("""{"count":1.0,"values":["a","b"]}""");
         var retry = Request("""{ "values": [ "a", "b" ], "count": 1e0 }""");
+        first["identity"]!["initiatingUserId"] = "abcdefab-1234-5678-90ab-abcdefabcdef";
         retry["executionContext"]!["correlationId"] = "retry-correlation";
-        retry["identity"]!["initiatingUserId"] = "USER-001";
+        retry["identity"]!["initiatingUserId"] = "{ABCDEFAB-1234-5678-90AB-ABCDEFABCDEF}";
         var reordered = new JsonObject(retry.Reverse()
             .Select(property => KeyValuePair.Create(property.Key, property.Value?.DeepClone())));
 
-        Assert.AreEqual(Identity(first), Identity(reordered, user: "USER-001"));
+        Assert.AreEqual(
+            Identity(first, user: "abcdefab-1234-5678-90ab-abcdefabcdef"),
+            Identity(reordered, user: "{ABCDEFAB-1234-5678-90AB-ABCDEFABCDEF}"));
+    }
+
+    [TestMethod]
+    [DataRow("9007199254740993", "9007199254740993.000")]
+    [DataRow("9007199254740993", "9.007199254740993e15")]
+    [DataRow("0.1234567890123456789012345678901", "123456789012345678901234567890100e-33")]
+    [DataRow("1e-9999", "10e-10000")]
+    [DataRow("1e-6", "0.000001000")]
+    [DataRow("1e21", "1000000000000000000000")]
+    [DataRow("-0.0", "0e-99999999999999999999")]
+    public void EquivalentLosslessNumbersProduceTheSameFingerprint(string firstNumber, string retryNumber)
+    {
+        Assert.AreEqual(
+            Identity(Request($$$"""{"frontMatterSchema":{"const":{{{firstNumber}}}}}""")),
+            Identity(Request($$$"""{"frontMatterSchema":{"const":{{{retryNumber}}}}}""")));
+    }
+
+    [TestMethod]
+    [DataRow("9007199254740992", "9007199254740993")]
+    [DataRow("0.1234567890123456789012345678901", "0.1234567890123456789012345678902")]
+    [DataRow("1e-9999", "0")]
+    [DataRow("-9007199254740992", "-9007199254740993")]
+    public void DistinctLosslessNumbersConflict(string originalNumber, string changedNumber)
+    {
+        var original = Identity(Request($$$"""{"frontMatterSchema":{"const":{{{originalNumber}}}}}"""));
+        var changed = Identity(Request($$$"""{"frontMatterSchema":{"const":{{{changedNumber}}}}}"""));
+
+        Assert.AreEqual(original.Id, changed.Id);
+        Assert.AreNotEqual(original.RequestFingerprint, changed.RequestFingerprint);
+        Assert.ThrowsExactly<IdempotencyKeyConflictException>(() =>
+            new IdempotencyRecord(original, "{}", false, DateTimeOffset.UtcNow).Match(changed));
+    }
+
+    [TestMethod]
+    public void NonGuidCallerIdsRemainCaseSensitive()
+    {
+        var request = Request("{}");
+
+        Assert.AreNotEqual(Identity(request).Id, Identity(request, user: "USER-001").Id);
     }
 
     [TestMethod]

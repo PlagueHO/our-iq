@@ -153,6 +153,127 @@ public sealed class IdempotencyCosmosRepositoryComponentTests
     }
 
     [TestMethod]
+    public async Task StagingCannotOccupyAnotherKeysReplayId()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var outcomeA = Outcome(fixture.Control);
+        var outcomeB = Outcome(fixture.Control, key: "other-key");
+        var (version, proposal) = fixture.StageRecords();
+
+        await Assert.ThrowsExactlyAsync<OntologyPayloadValidationException>(() =>
+            fixture.Repository.CommitStagedVersionAsync(
+                version, proposal with { Id = outcomeA.Identity.Id }, fixture.Control, outcomeB));
+
+        Assert.AreEqual(0, await fixture.CountAsync("ontologyVersion"));
+        Assert.AreEqual(0, await fixture.CountAsync(OntologyControlRecordTypes.Proposal));
+        Assert.IsNull(await fixture.Repository.GetReplayAsync(outcomeA.Identity));
+        Assert.IsNull(await fixture.Repository.GetReplayAsync(outcomeB.Identity));
+        Assert.AreEqual(outcomeA, await fixture.Repository.CommitStagedVersionAsync(
+            version, proposal, fixture.Control, outcomeA));
+        Assert.AreEqual(outcomeA, await fixture.NewRepository().GetReplayAsync(outcomeA.Identity));
+    }
+
+    [TestMethod]
+    [DataRow("ontologyVersion")]
+    [DataRow("ontologyProposal")]
+    [DataRow("ontologyCompatibilityAssessment")]
+    [DataRow("ontologyApproval")]
+    [DataRow("executionContextSnapshot")]
+    [DataRow("knowledgeSpaceControl")]
+    public async Task StandaloneWritersCannotOccupyReplayIds(string recordType)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var outcome = Outcome(fixture.Control) with { IsError = true };
+        var id = outcome.Identity.Id;
+        var (version, proposal) = fixture.StageRecords(versionId: id);
+        switch (recordType)
+        {
+            case "ontologyVersion":
+                await Assert.ThrowsExactlyAsync<OntologyPayloadValidationException>(() =>
+                    fixture.Repository.CreateVersionAsync(version));
+                break;
+            case "ontologyProposal":
+                await Assert.ThrowsExactlyAsync<OntologyPayloadValidationException>(() =>
+                    fixture.Repository.CreateProposalAsync(proposal with { Id = id }));
+                break;
+            case "ontologyCompatibilityAssessment":
+                await Assert.ThrowsExactlyAsync<OntologyPayloadValidationException>(() =>
+                    fixture.Repository.CreateCompatibilityAssessmentAsync(new()
+                    {
+                        Id = id,
+                        KnowledgeSpaceId = fixture.Control.KnowledgeSpaceId,
+                        OntologyVersionId = version.Id,
+                        CreatedBy = "owner-001",
+                        CreatedAt = DateTimeOffset.UtcNow
+                    }));
+                break;
+            case "ontologyApproval":
+                await Assert.ThrowsExactlyAsync<OntologyPayloadValidationException>(() =>
+                    fixture.Repository.CreateApprovalAsync(new()
+                    {
+                        Id = id,
+                        KnowledgeSpaceId = fixture.Control.KnowledgeSpaceId,
+                        OntologyVersionId = version.Id,
+                        CompatibilityAssessmentId = "assessment-001",
+                        ActorId = "owner-001",
+                        Authority = KnowledgeSpaceRoles.OntologyManager,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    }));
+                break;
+            case "executionContextSnapshot":
+                var snapshot = ExecutionContextSnapshot.Create(
+                    fixture.Control, id, "trace-001", DomainAgentIdentities.Ontology,
+                    DomainAgentIdentities.InitialDefinitionVersion, "owner-001");
+                await Assert.ThrowsExactlyAsync<OntologyPayloadValidationException>(() =>
+                    fixture.Snapshots.CreateAsync(snapshot));
+                break;
+            case "knowledgeSpaceControl":
+                await Assert.ThrowsExactlyAsync<KnowledgeSpaceControlRecordValidationException>(() =>
+                    fixture.Spaces.UpdateAsync(
+                        fixture.Control with { KnowledgeSpaceId = id }, fixture.Control.ETag!));
+                break;
+            default:
+                Assert.Fail($"Unexpected record type '{recordType}'.");
+                break;
+        }
+
+        Assert.IsNull(await fixture.Repository.GetReplayAsync(outcome.Identity));
+        Assert.AreEqual(outcome, await fixture.Repository.SaveFailureAsync(outcome));
+        Assert.AreEqual(outcome, await fixture.NewRepository().GetReplayAsync(outcome.Identity));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ActivationWritersCannotOccupyReplayIds(bool atomic)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = await fixture.SeedActivationAsync();
+        var outcome = Outcome(fixture.Control, operation: "activate_ontology_version");
+        request = request with { ActivationEvidenceId = outcome.Identity.Id };
+
+        await Assert.ThrowsExactlyAsync<OntologyPayloadValidationException>(async () =>
+        {
+            if (atomic)
+            {
+                await fixture.Repository.CommitActivationAsync(request, fixture.Control, outcome);
+            }
+            else
+            {
+                await fixture.Repository.ActivateAsync(request);
+            }
+        });
+
+        Assert.AreEqual(0, await fixture.CountAsync(OntologyControlRecordTypes.ActivationEvidence));
+        Assert.IsNull(await fixture.Repository.GetReplayAsync(outcome.Identity));
+        var current = await fixture.Spaces.GetAsync(fixture.Control.KnowledgeSpaceId);
+        Assert.IsNotNull(current);
+        Assert.IsNull(current.ActiveOntologyVersionId);
+        var failure = outcome with { IsError = true };
+        Assert.AreEqual(failure, await fixture.Repository.SaveFailureAsync(failure));
+    }
+
+    [TestMethod]
     public async Task OversizedBatchIsRejectedBeforeWrites()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -206,12 +327,13 @@ public sealed class IdempotencyCosmosRepositoryComponentTests
         KnowledgeSpaceControlRecord space,
         string input = "original",
         string user = "user-001",
-        string operation = "stage_ontology_version")
+        string operation = "stage_ontology_version",
+        string key = "same-key")
     {
         var request = JsonSerializer.SerializeToElement(new
         {
             knowledgeSpaceId = space.KnowledgeSpaceId,
-            idempotencyKey = "same-key",
+            idempotencyKey = key,
             identity = new { initiatingUserId = user },
             executionContext = new { correlationId = "original-correlation" },
             arguments = new { input }
@@ -273,6 +395,7 @@ public sealed class IdempotencyCosmosRepositoryComponentTests
         public KnowledgeSpaceCosmosRepository Spaces { get; }
         public KnowledgeSpaceControlRecord Control { get; private set; }
         public OntologyVersionCosmosRepository Repository { get; }
+        public ExecutionContextSnapshotCosmosRepository Snapshots => new(client, Options.Create(options));
         private Container Container => client.GetContainer(options.DatabaseName, options.ContainerName);
 
         public static async Task<Fixture> CreateAsync(RequestHandler? handler = null)
@@ -304,12 +427,13 @@ public sealed class IdempotencyCosmosRepositoryComponentTests
 
         public OntologyVersionCosmosRepository NewRepository() => new(client, Options.Create(options));
 
-        public (OntologyVersionEnvelope Version, OntologyProposal Proposal) StageRecords()
+        public (OntologyVersionEnvelope Version, OntologyProposal Proposal) StageRecords(
+            string versionId = "version-001")
         {
             var payload = new OntologyPayload
             {
                 OntologyId = "ontology-product",
-                OntologyVersionId = "version-001",
+                OntologyVersionId = versionId,
                 Title = "Product knowledge",
                 Description = "Product decisions.",
                 DocumentTypes = [new("decision", "A decision.",

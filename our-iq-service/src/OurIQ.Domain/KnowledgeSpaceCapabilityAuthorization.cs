@@ -71,7 +71,10 @@ public static class KnowledgeSpaceRoleCapabilities
         ArgumentException.ThrowIfNullOrWhiteSpace(requiredCapability);
 
         return record.RoleGrants.Any(grant =>
-            string.Equals(grant.UserId, userId, StringComparison.Ordinal)
+            string.Equals(
+                CallerIdentity.NormalizeUserId(grant.UserId),
+                CallerIdentity.NormalizeUserId(userId),
+                StringComparison.Ordinal)
             && CapabilitiesByRole[grant.Role].Contains(requiredCapability));
     }
 }

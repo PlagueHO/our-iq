@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -80,25 +81,32 @@ public static class JsonCanonicalizer
     public static string Canonicalize(JsonElement value)
     {
         var builder = new StringBuilder();
-        WriteValue(value, builder);
+        WriteValue(value, builder, losslessNumbers: false);
         return builder.ToString();
     }
 
-    private static void WriteValue(JsonElement value, StringBuilder builder)
+    public static string CanonicalizeLosslessNumbers(JsonElement value)
+    {
+        var builder = new StringBuilder();
+        WriteValue(value, builder, losslessNumbers: true);
+        return builder.ToString();
+    }
+
+    private static void WriteValue(JsonElement value, StringBuilder builder, bool losslessNumbers)
     {
         switch (value.ValueKind)
         {
             case JsonValueKind.Object:
-                WriteObject(value, builder);
+                WriteObject(value, builder, losslessNumbers);
                 return;
             case JsonValueKind.Array:
-                WriteArray(value, builder);
+                WriteArray(value, builder, losslessNumbers);
                 return;
             case JsonValueKind.String:
                 WriteString(value.GetString()!, builder);
                 return;
             case JsonValueKind.Number:
-                builder.Append(FormatNumber(value));
+                builder.Append(losslessNumbers ? FormatLosslessNumber(value) : FormatNumber(value));
                 return;
             case JsonValueKind.True:
                 builder.Append("true");
@@ -116,7 +124,7 @@ public static class JsonCanonicalizer
         }
     }
 
-    private static void WriteObject(JsonElement value, StringBuilder builder)
+    private static void WriteObject(JsonElement value, StringBuilder builder, bool losslessNumbers)
     {
         var properties = value.EnumerateObject().ToArray();
         var duplicate = properties
@@ -140,13 +148,13 @@ public static class JsonCanonicalizer
 
             WriteString(property.Name, builder);
             builder.Append(':');
-            WriteValue(property.Value, builder);
+            WriteValue(property.Value, builder, losslessNumbers);
         }
 
         builder.Append('}');
     }
 
-    private static void WriteArray(JsonElement value, StringBuilder builder)
+    private static void WriteArray(JsonElement value, StringBuilder builder, bool losslessNumbers)
     {
         builder.Append('[');
         foreach (var element in value.EnumerateArray())
@@ -156,7 +164,7 @@ public static class JsonCanonicalizer
                 builder.Append(',');
             }
 
-            WriteValue(element, builder);
+            WriteValue(element, builder, losslessNumbers);
         }
 
         builder.Append(']');
@@ -215,7 +223,45 @@ public static class JsonCanonicalizer
         builder.Append('"');
     }
 
-    private static string FormatNumber(JsonElement value)
+    private static string FormatLosslessNumber(JsonElement value)
+    {
+        _ = RequireFiniteNumber(value);
+        var raw = value.GetRawText();
+        var sign = raw[0] == '-' ? "-" : string.Empty;
+        var unsigned = sign.Length == 0 ? raw : raw[1..];
+        var exponentIndex = unsigned.IndexOfAny(['E', 'e']);
+        var mantissa = exponentIndex < 0 ? unsigned : unsigned[..exponentIndex];
+        var exponent = exponentIndex < 0
+            ? BigInteger.Zero
+            : BigInteger.Parse(unsigned[(exponentIndex + 1)..], CultureInfo.InvariantCulture);
+        var decimalIndex = mantissa.IndexOf('.');
+        var fractionalDigits = decimalIndex < 0 ? 0 : mantissa.Length - decimalIndex - 1;
+        var digits = mantissa.Replace(".", string.Empty, StringComparison.Ordinal).TrimStart('0');
+        if (digits.Length == 0)
+        {
+            return "0";
+        }
+
+        var significantDigits = digits.TrimEnd('0');
+        exponent += digits.Length - significantDigits.Length - fractionalDigits;
+        var scientificExponent = exponent + significantDigits.Length - 1;
+        if (scientificExponent >= -6 && scientificExponent < 21)
+        {
+            var decimalPosition = (int)scientificExponent + 1;
+            return sign + (decimalPosition <= 0
+                ? $"0.{new string('0', -decimalPosition)}{significantDigits}"
+                : decimalPosition >= significantDigits.Length
+                    ? significantDigits.PadRight(decimalPosition, '0')
+                    : significantDigits.Insert(decimalPosition, "."));
+        }
+
+        var normalizedMantissa = significantDigits.Length == 1
+            ? significantDigits
+            : significantDigits.Insert(1, ".");
+        return $"{sign}{normalizedMantissa}e{scientificExponent.ToString("+0;-0", CultureInfo.InvariantCulture)}";
+    }
+
+    private static double RequireFiniteNumber(JsonElement value)
     {
         if (!value.TryGetDouble(out var number) || !double.IsFinite(number))
         {
@@ -224,6 +270,12 @@ public static class JsonCanonicalizer
                 nameof(value));
         }
 
+        return number;
+    }
+
+    private static string FormatNumber(JsonElement value)
+    {
+        var number = RequireFiniteNumber(value);
         if (number == 0)
         {
             return "0";

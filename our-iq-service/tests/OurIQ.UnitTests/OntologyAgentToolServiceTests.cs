@@ -324,6 +324,142 @@ public sealed class OntologyAgentToolServiceTests
     }
 
     [TestMethod]
+    [DataRow("abcdefab-1234-5678-90ab-abcdef123456")]
+    [DataRow("ABCDEFAB-1234-5678-90AB-ABCDEF123456")]
+    public async Task EntraCallerCasingMatchesAuthorizationSnapshotAndSavedReplay(string persistedUserId)
+    {
+        var harness = CreateHarness(
+            KnowledgeSpaceLifecycleStates.Pending, initiatingUserId: persistedUserId);
+        const string operation = "stage_ontology_version";
+        var arguments = new { proposalId = "proposal-001", payload = CreatePayload() };
+        var request = JsonNode.Parse(CreateRequest(harness.Snapshot, operation, arguments).GetRawText())!;
+        request["identity"]!["initiatingUserId"] = persistedUserId == persistedUserId.ToUpperInvariant()
+            ? persistedUserId.ToLowerInvariant()
+            : persistedUserId.ToUpperInvariant();
+        var first = await harness.Service.ExecuteAsync(operation, JsonSerializer.SerializeToElement(request));
+        Assert.IsFalse(first.IsError);
+
+        harness.Spaces.Record = harness.Spaces.Record with { MutationPolicyVersion = "2.0" };
+        var replay = await harness.Service.ExecuteAsync(
+            operation, CreateRequest(harness.Snapshot, operation, arguments, correlationId: "retry"));
+        Assert.IsFalse(replay.IsError);
+        Assert.AreEqual(first.Content.OfType<TextContentBlock>().Single().Text,
+            replay.Content.OfType<TextContentBlock>().Single().Text);
+        Assert.HasCount(1, harness.Ontologies.Versions);
+        Assert.HasCount(1, harness.Ontologies.Replays);
+    }
+
+    [TestMethod]
+    [DataRow("abcdefab-1234-5678-90ab-abcdef123456", "bbcdefab-1234-5678-90ab-abcdef123456", "agent-ontology")]
+    [DataRow("ontology-manager-001", "ONTOLOGY-MANAGER-001", "agent-ontology")]
+    [DataRow("abcdefab-1234-5678-90ab-abcdef123456", "abcdefab-1234-5678-90ab-abcdef123456", "AGENT-ONTOLOGY")]
+    public async Task CallerNormalizationDoesNotAuthorizeDistinctUsersOrAgentCasing(
+        string persistedUserId, string requestedUserId, string requestedAgentId)
+    {
+        var harness = CreateHarness(
+            KnowledgeSpaceLifecycleStates.Pending, initiatingUserId: persistedUserId);
+        var request = JsonNode.Parse(CreateRequest(harness.Snapshot, "stage_ontology_version",
+            new { proposalId = "proposal-001", payload = CreatePayload() }).GetRawText())!;
+        request["identity"]!["initiatingUserId"] = requestedUserId;
+        request["identity"]!["actingAgentId"] = requestedAgentId;
+
+        AssertError(await harness.Service.ExecuteAsync(
+            "stage_ontology_version", JsonSerializer.SerializeToElement(request)), "authorization_denied");
+        Assert.HasCount(0, harness.Ontologies.Replays);
+        Assert.HasCount(0, harness.Ontologies.Versions);
+    }
+
+    [TestMethod]
+    public async Task DistinctAuthorizedEntraUserCannotUseAnotherUsersSnapshot()
+    {
+        const string snapshotUser = "abcdefab-1234-5678-90ab-abcdef123456";
+        const string otherUser = "bbcdefab-1234-5678-90ab-abcdef123456";
+        var harness = CreateHarness(
+            KnowledgeSpaceLifecycleStates.Pending, initiatingUserId: snapshotUser);
+        harness.Spaces.Record = harness.Spaces.Record.GrantRole(
+            "owner-001", otherUser, KnowledgeSpaceRoles.OntologyManager);
+        var request = JsonNode.Parse(CreateRequest(harness.Snapshot, "get_space", new { }).GetRawText())!;
+        request["identity"]!["initiatingUserId"] = otherUser;
+
+        AssertError(await harness.Service.ExecuteAsync(
+            "get_space", JsonSerializer.SerializeToElement(request)), "replan_required");
+        Assert.HasCount(0, harness.Ontologies.Replays);
+    }
+
+    [TestMethod]
+    public async Task SavedStateFailureNeedsFreshSnapshotAndNewKeyAfterCorrection()
+    {
+        var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Active);
+        const string operation = "stage_ontology_version";
+        var arguments = new { proposalId = "proposal-001", payload = CreatePayload() };
+        var request = CreateRequest(harness.Snapshot, operation, arguments);
+        var first = await harness.Service.ExecuteAsync(operation, request);
+        AssertError(first, "space_state_conflict");
+        AssertSavedFailureRemediation(first);
+
+        harness.Spaces.Record = harness.Spaces.Record with { LifecycleState = KnowledgeSpaceLifecycleStates.Pending };
+        var fresh = ExecutionContextSnapshot.Create(
+            harness.Spaces.Record, "execution-new", "trace-new",
+            DomainAgentIdentities.Ontology, DomainAgentIdentities.InitialDefinitionVersion, OntologyManagerUser);
+        harness.Snapshots.Snapshots.Add(fresh.ExecutionId, fresh);
+        var replay = await harness.Service.ExecuteAsync(operation, request);
+        Assert.AreEqual(first.Content.OfType<TextContentBlock>().Single().Text,
+            replay.Content.OfType<TextContentBlock>().Single().Text);
+        AssertError(await harness.Service.ExecuteAsync(
+            operation, CreateRequest(fresh, operation, arguments)), "idempotency_key_conflict");
+        Assert.IsFalse((await harness.Service.ExecuteAsync(
+            operation, CreateRequest(fresh, operation, arguments, idempotencyKey: "corrected-key"))).IsError);
+    }
+
+    [TestMethod]
+    public async Task SavedPrerequisiteFailureNeedsNewKeyEvenWhenRequestDoesNotChange()
+    {
+        var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Pending);
+        const string operation = "validate_ontology_compatibility";
+        var version = CreateVersion(harness.Spaces.Record.KnowledgeSpaceId);
+        var arguments = new { assessmentId = "assessment-001", ontologyVersionId = version.OntologyVersionId };
+        var request = CreateRequest(harness.Snapshot, operation, arguments);
+        var first = await harness.Service.ExecuteAsync(operation, request);
+        AssertError(first, "validation_failed");
+        AssertSavedFailureRemediation(first);
+
+        harness.Ontologies.Versions.Add(version.OntologyVersionId, version);
+        var replay = await harness.Service.ExecuteAsync(operation, request);
+        Assert.AreEqual(first.Content.OfType<TextContentBlock>().Single().Text,
+            replay.Content.OfType<TextContentBlock>().Single().Text);
+        Assert.IsFalse((await harness.Service.ExecuteAsync(operation,
+            CreateRequest(harness.Snapshot, operation, arguments, idempotencyKey: "corrected-key"))).IsError);
+        Assert.HasCount(1, harness.Ontologies.Assessments);
+    }
+
+    [TestMethod]
+    public async Task SavedStaleSnapshotFailureRequiresFreshSnapshotAndNewKeyButReadsDoNot()
+    {
+        var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Pending);
+        harness.Spaces.Record = harness.Spaces.Record with { MutationPolicyVersion = "2.0" };
+        var mutation = await harness.Service.ExecuteAsync("stage_ontology_version",
+            CreateRequest(harness.Snapshot, "stage_ontology_version", new { }));
+        AssertError(mutation, "replan_required");
+        AssertSavedFailureRemediation(mutation);
+
+        var read = await harness.Service.ExecuteAsync(
+            "get_space", CreateRequest(harness.Snapshot, "get_space", new { }));
+        AssertError(read, "replan_required");
+        using var response = ReadResponse(read);
+        Assert.AreEqual("Create a fresh execution-context snapshot and retry.",
+            response.RootElement.GetProperty("error").GetProperty("remediation").GetString());
+        Assert.HasCount(1, harness.Ontologies.Replays);
+    }
+
+    private static void AssertSavedFailureRemediation(CallToolResult result)
+    {
+        using var response = ReadResponse(result);
+        var remediation = response.RootElement.GetProperty("error").GetProperty("remediation").GetString()!;
+        StringAssert.Contains(remediation, "new idempotency key");
+        StringAssert.Contains(remediation, "execution-context snapshot");
+    }
+
+    [TestMethod]
     public async Task ReplayRequiresCurrentAccessAndRejectsChangedSnapshots()
     {
         var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Pending);
@@ -414,7 +550,11 @@ public sealed class OntologyAgentToolServiceTests
         Assert.AreEqual(0, harness.Ontologies.CommitAttempts);
         harness.Ontologies.LookupFailure = null;
         harness.Ontologies.CommitFailure = new MutationDependencyException();
-        AssertError(await harness.Service.ExecuteAsync(operation, request), "dependency_unavailable");
+        var dependencyFailure = await harness.Service.ExecuteAsync(operation, request);
+        AssertError(dependencyFailure, "dependency_unavailable");
+        using var dependencyResponse = ReadResponse(dependencyFailure);
+        Assert.AreEqual("Retry the original request with the same idempotency key.",
+            dependencyResponse.RootElement.GetProperty("error").GetProperty("remediation").GetString());
         Assert.HasCount(0, harness.Ontologies.Replays);
         harness.Ontologies.CommitFailure = null;
         Assert.IsFalse((await harness.Service.ExecuteAsync(operation, request)).IsError);
