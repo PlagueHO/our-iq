@@ -262,7 +262,14 @@ in general:
 
 For the implemented private mutations, canonical request comparison ignores
 object property order, JSON whitespace, `idempotencyKey`, and
-`executionContext.correlationId`. It normalizes the initiating user identifier.
+`executionContext.correlationId`. Entra GUID initiating user identifiers use
+their canonical GUID form across authorization, snapshot comparison, and replay.
+Other user identifiers and logical agent identifiers stay case-sensitive.
+Request numbers are compared without precision loss; equivalent decimal forms
+match. This request rule does not change ontology payload digest canonicalization.
+Older saved fingerprints that lost number precision or non-GUID caller casing
+can return a conflict after this correction. Reconcile these outcomes before
+rollout; do not rewrite a fingerprint without the original request evidence.
 It preserves arguments, array order, explicit null versus omission, agent
 definition version, and pinned snapshot values. Duplicate JSON properties are
 invalid. A different snapshot requires a new key. A new key starts new processing
@@ -276,6 +283,9 @@ New executions still require valid, fresh snapshots and a legal lifecycle state.
 
 Domain records and the original response commit atomically.
 Deterministic business failures can be saved after envelope and access checks.
+Correct the condition and use a new key for a new execution, even if only a
+prerequisite changed. Refresh the execution-context snapshot when needed.
+The original request with the original key still returns the saved failure.
 Authentication, authorization, malformed-envelope, dependency, cancellation, and
 unexpected internal failures are not saved. A dependency fault can leave the
 commit outcome uncertain. Retry the original request with the same key.
@@ -284,6 +294,9 @@ Oversized transactions are rejected rather than split.
 Replay records have no automatic expiry. Their saved responses are content-bearing
 control records governed by
 [ADR-0030](../decisions/adr-0030-pilot-data-governance-and-retention-controls).
+The `ouriq-replay-` ID prefix is reserved for replay records in all writers to
+the shared container. Before rollout, reconcile existing domain records with
+this prefix; do not overwrite them or treat them as replay outcomes.
 [ADR-0031](../decisions/adr-0031-idempotency-and-shared-errors) records the
 transaction design, replay rationale, and production purge limits.
 
@@ -298,15 +311,15 @@ This does not change HTTP authentication, MCP protocol, or resource-read errors.
 | --- | --- | --- |
 | `authentication_required` | No valid authenticated caller context. | Authenticate and retry. |
 | `authorization_denied` | User, agent, or grant lacks capability. | Request appropriate authorization. |
-| `space_state_conflict` | Current lifecycle state does not permit the operation. | Inspect state or wait for transition. |
+| `space_state_conflict` | Current lifecycle state does not permit the operation. | Inspect state or wait for transition. For a saved private mutation failure, refresh the snapshot and use a new key. |
 | `ontology_not_active` | A required active ontology is unavailable. | Complete or approve setup. |
-| `validation_failed` | Required schema or ontology validation failed. | Correct input or plan. |
+| `validation_failed` | Required schema or ontology validation failed. | Correct input or prerequisites. For a saved private mutation failure, use a new key and refresh the snapshot when needed. |
 | `policy_rejected` | Mutation policy rejects the requested route. | Use the required approval route. |
 | `insufficient_grounding` | Evidence cannot support a requested conclusion. | Supply evidence or narrow the request. |
 | `clarification_required` | Contribution intent has multiple materially different grounded interpretations. | Answer the focused questions and resubmit; no plan or mutation exists. |
 | `partial_plan` | Some source material could not be interpreted safely. | Review gaps and decide whether to proceed. |
 | `approval_expired` | Required confirmation or approval is no longer valid. | Re-plan or obtain a new approval. |
-| `replan_required` | Pinned ontology version, lifecycle, policy, or canonical head is stale or incompatible. | Submit or obtain a new plan. |
+| `replan_required` | Pinned ontology version, lifecycle, policy, or canonical head is stale or incompatible. | Submit or obtain a new plan. For a saved private mutation failure, obtain a fresh snapshot and use a new key. |
 | `idempotency_key_conflict` | Key was reused with different input. | Use a new key. |
 | `asset_unsupported` | The asset type or extraction capability is unsupported. | Provide a supported source or preserve for later processing. |
 | `operation_not_cancellable` | Cancellation would be unsafe at the current operation stage. | Wait for terminal outcome. |

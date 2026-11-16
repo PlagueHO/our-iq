@@ -51,8 +51,15 @@ internal sealed class KnowledgeSpaceControlRecordDocument
     public IReadOnlyList<KnowledgeSpaceRoleGrant>? RoleGrants { get; init; }
 
     public static KnowledgeSpaceControlRecordDocument FromDomain(
-        KnowledgeSpaceControlRecord record) =>
-        new()
+        KnowledgeSpaceControlRecord record)
+    {
+        if (record.KnowledgeSpaceId.StartsWith(IdempotencyIdentity.RecordIdPrefix, StringComparison.Ordinal))
+        {
+            throw new KnowledgeSpaceControlRecordValidationException(
+                "The ouriq-replay- ID prefix is reserved for idempotency outcomes.");
+        }
+
+        return new()
         {
             KnowledgeSpaceId = record.KnowledgeSpaceId,
             PartitionKnowledgeSpaceId = record.KnowledgeSpaceId,
@@ -70,6 +77,7 @@ internal sealed class KnowledgeSpaceControlRecordDocument
             CreatedBy = record.CreatedBy,
             RoleGrants = record.RoleGrants
         };
+    }
 
     public KnowledgeSpaceControlRecord ToDomain(string? etag) =>
         new()

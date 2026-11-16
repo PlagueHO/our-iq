@@ -114,6 +114,17 @@ public sealed class OntologyAgentToolService(
                 return ToolResult(response, true);
             }
 
+            var error = response.Error!;
+            response = response with
+            {
+                Error = error with
+                {
+                    Remediation = error.Code == "replan_required"
+                        ? "Create a fresh execution-context snapshot and retry with a new idempotency key."
+                        : $"{error.Remediation} Use a new idempotency key for the corrected execution. Refresh the execution-context snapshot if needed."
+                }
+            };
+
             try
             {
                 var outcome = await ontologies.SaveFailureAsync(
@@ -793,8 +804,8 @@ public sealed class OntologyAgentToolService(
         AddMismatch(
             mismatches,
             "initiatingUserId",
-            request.Identity.InitiatingUserId,
-            snapshot.InitiatingUserId);
+            CallerIdentity.NormalizeUserId(request.Identity.InitiatingUserId),
+            CallerIdentity.NormalizeUserId(snapshot.InitiatingUserId));
         AddMismatch(
             mismatches,
             "actingAgentId",

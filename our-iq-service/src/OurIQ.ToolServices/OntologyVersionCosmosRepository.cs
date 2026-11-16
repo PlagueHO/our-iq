@@ -409,14 +409,22 @@ internal sealed class OntologyControlRecordDocument
         T record,
         string id,
         string knowledgeSpaceId,
-        string recordType) =>
-        new()
+        string recordType)
+    {
+        if (id.StartsWith(IdempotencyIdentity.RecordIdPrefix, StringComparison.Ordinal))
+        {
+            throw new OntologyPayloadValidationException(
+                "The ouriq-replay- ID prefix is reserved for idempotency outcomes.");
+        }
+
+        return new()
         {
             Id = id,
             KnowledgeSpaceId = knowledgeSpaceId,
             RecordType = recordType,
             Record = JObject.Parse(JsonSerializer.Serialize(record))
         };
+    }
 
     public static OntologyControlRecordDocument FromDomain(
         OntologyActivationEvidence evidence,

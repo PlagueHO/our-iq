@@ -42,7 +42,10 @@ unsupported.
    Store a hash of the scope, not the raw key. Keep keys case-sensitive.
 2. Compare canonical JSON fingerprints. Ignore object property order, JSON
    whitespace, the key itself, and `executionContext.correlationId`. Normalize
-   the initiating user identifier. Keep arguments, array order, explicit nulls,
+   Entra GUID initiating user identifiers to their canonical GUID form for
+   authorization, snapshot comparison, and replay. Keep other user identifiers
+   and logical agent identifiers case-sensitive. Compare request numbers without
+   precision loss; equivalent decimal forms match. Keep arguments, array order, explicit nulls,
    agent definition version, and the pinned snapshot significant. Reject
    duplicate JSON properties.
 3. Check current user and agent access before reading a saved outcome.
@@ -58,6 +61,8 @@ unsupported.
    identity exists. Do not save authentication, authorization, malformed-envelope,
    dependency, cancellation, or unexpected internal failures.
    On a race, read a committed winner before recording a failure.
+   A corrected execution needs a new key even if only a prerequisite changed.
+   Refresh the snapshot when the correction changes its pinned state.
 6. Bound internal ETag retries. A timeout does not prove rollback.
    Recover the committed outcome when possible; otherwise return
    `dependency_unavailable` and require retry with the original key.
@@ -69,6 +74,9 @@ unsupported.
    classification, geography, legal holds, and deletion deadlines.
    This issue adds no purge job.
    Production admission still requires purge evidence.
+   Reserve the `ouriq-replay-` ID prefix for replay records in every writer to
+   this container. Before rollout, reconcile any existing domain records with
+   this prefix; do not overwrite or treat them as saved outcomes.
 8. Share the application error object across hosts: `code`, `category`,
    `message`, and `remediation`. Keep correlation IDs on the response envelope.
    Use `operation_not_implemented` / `state`, `dependency_unavailable` /
@@ -78,6 +86,11 @@ unsupported.
 
 The original response body keeps its original correlation ID on replay.
 A retry's HTTP correlation header can differ.
+
+Existing replay records remain readable. A retry can conflict if an older
+fingerprint rounded a request number or folded a non-GUID caller's casing.
+Do not rewrite those fingerprints automatically: the stored hash cannot recover
+the original precision or casing. Reconcile affected outcomes before rollout.
 
 ## Alternatives considered
 
