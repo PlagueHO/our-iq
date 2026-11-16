@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Identity.Web;
+using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using OurIQ.Contracts;
 using OurIQ.Domain;
@@ -52,15 +53,42 @@ builder.Services
     .WithRequestFilters(filters =>
         filters.AddCallToolFilter(next => async (context, cancellationToken) =>
         {
+            var request = ToolFailureResults.ReadRequest(context.Params.Arguments);
+            var correlationId = context.Services?.GetService<ITelemetryContextAccessor>()?.Current?.CorrelationId;
             if (context.Services is null || context.User is null)
             {
-                return OurIQ.McpServer.IdentityToolResults.IdentityMismatch();
+                return ToolFailureResults.Create(
+                    context.Params.Name, request, false, ApplicationError.IdentityMismatch, correlationId);
             }
 
             var validator = context.Services.GetRequiredService<AttendedIdentityEnvelopeValidator>();
-            return validator.MatchesPublic(context.User, context.Params.Arguments)
-                ? await next(context, cancellationToken)
-                : OurIQ.McpServer.IdentityToolResults.IdentityMismatch();
+            if (!validator.MatchesPublic(context.User, context.Params.Arguments))
+            {
+                return ToolFailureResults.Create(
+                    context.Params.Name, request, false, ApplicationError.IdentityMismatch, correlationId);
+            }
+
+            try
+            {
+                return await next(context, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (McpException)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                context.Services.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("OurIQ.ToolErrors")
+                    .LogError("Tool failed at {Stage} with {ErrorType}. Correlation {CorrelationId}.",
+                        "public", exception.GetType().Name, correlationId);
+                return ToolFailureResults.Create(
+                    context.Params.Name, request, false, ToolFailureResults.Classify(exception), correlationId);
+            }
         }));
 
 var app = builder.Build();

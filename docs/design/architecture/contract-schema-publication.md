@@ -85,8 +85,13 @@ The public schema covers the initial space setup, ontology approval,
 contribution, change-plan approval, and query envelopes. The private schema
 covers the initial Ontology, Contribution, and Retrieval Agent tool manifests,
 including their shared identity, execution-context, and state requirements.
-These are pre-GA repository assets; the public MCP resource resolver and
-private Tool Services runtime packaging remain follow-up implementation work.
+These are pre-GA repository assets. Runtime behavior must be checked against
+the current host tests, not inferred from this proposed publication model.
+
+The issue #36 schema update keeps development contract version `1.0` and updates
+both manifest SHA256 digests. The API baseline defines
+[idempotency and concurrency](api-contract-baseline#idempotency-and-concurrency)
+and the shared [error taxonomy](api-contract-baseline#error-taxonomy).
 
 ## Version and compatibility policy
 

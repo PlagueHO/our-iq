@@ -44,7 +44,12 @@
       ]
     },
     "knowledgeSpaceId": {
-      "$ref": "#/$defs/opaqueId"
+      "$ref": "#/$defs/nullableOpaqueId"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
     },
     "identity": {
       "$ref": "#/$defs/domainAgentIdentity"
@@ -81,6 +86,11 @@
         "executionContext",
         "arguments"
       ],
+      "properties": {
+        "knowledgeSpaceId": {
+          "$ref": "#/$defs/opaqueId"
+        }
+      },
       "not": {
         "anyOf": [
           {
@@ -131,6 +141,9 @@
           "properties": {
             "outcome": {
               "const": "completed"
+            },
+            "knowledgeSpaceId": {
+              "$ref": "#/$defs/opaqueId"
             }
           },
           "required": [
@@ -161,6 +174,28 @@
     }
   ],
   "allOf": [
+    {
+      "if": {
+        "required": [
+          "arguments"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "stage_ontology_version",
+              "validate_ontology_compatibility",
+              "record_approval",
+              "activate_ontology_version"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "idempotencyKey"
+        ]
+      }
+    },
     {
       "if": {
         "properties": {
@@ -528,7 +563,11 @@
             "policy_rejected",
             "approval_expired",
             "replan_required",
-            "contract_version_unsupported"
+            "contract_version_unsupported",
+            "idempotency_key_conflict",
+            "operation_not_implemented",
+            "dependency_unavailable",
+            "internal_error"
           ]
         },
         "category": {
@@ -538,7 +577,9 @@
             "conflict",
             "validation",
             "policy",
-            "state"
+            "state",
+            "availability",
+            "internal"
           ]
         },
         "message": {

@@ -1,6 +1,10 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Json.Schema;
+using ModelContextProtocol.Protocol;
+using OurIQ.Contracts;
+using OurIQ.ToolServices;
 
 namespace OurIQ.UnitTests;
 
@@ -304,12 +308,112 @@ public sealed class ContractSchemaTests
         Assert.IsFalse(properties.TryGetProperty("eTag", out _));
     }
 
+    [TestMethod]
+    [DataRow("stage_ontology_version")]
+    [DataRow("validate_ontology_compatibility")]
+    [DataRow("record_approval")]
+    [DataRow("activate_ontology_version")]
+    [DataRow("get_space")]
+    public void PrivateMutationKeysAreRequiredAndReadsRemainKeyFree(string operation)
+    {
+        object arguments = operation switch
+        {
+            "stage_ontology_version" => new
+            {
+                proposalId = "proposal-001",
+                payload = OntologyAgentToolServiceTests.CreatePayload()
+            },
+            "validate_ontology_compatibility" => new
+            {
+                assessmentId = "assessment-001", ontologyVersionId = "ontology-v1"
+            },
+            "record_approval" => new
+            {
+                approvalId = "approval-001", ontologyVersionId = "ontology-v1",
+                compatibilityAssessmentId = "assessment-001", decision = "approve"
+            },
+            "activate_ontology_version" => new
+            {
+                ontologyVersionId = "ontology-v1", payloadDigest = new string('a', 64),
+                approvalId = "approval-001", activationEvidenceId = "activation-001",
+                expectedActiveOntologyVersionId = (string?)null,
+                expectedActiveOntologyDigest = (string?)null
+            },
+            _ => new { }
+        };
+        var request = JsonSerializer.SerializeToNode(new
+        {
+            contractVersion = "1.0", operation, knowledgeSpaceId = "space-001", idempotencyKey = "key-001",
+            identity = new
+            {
+                initiatingUserId = "user-001", actingAgentId = "agent-ontology",
+                agentDefinitionVersion = "1.0", requiredCapability = operation
+            },
+            executionContext = new
+            {
+                executionId = "execution-001", traceId = "trace-001", correlationId = "correlation-001",
+                knowledgeSpaceId = "space-001", lifecycleState = "pending",
+                ontologyVersion = (string?)null, ontologyDigest = (string?)null,
+                mutationPolicy = "review", mutationPolicyVersion = "1.0", canonicalHeadVersion = (string?)null
+            },
+            arguments
+        }, new JsonSerializerOptions(JsonSerializerDefaults.Web))!.AsObject();
+        AssertValid("private", request.ToJsonString());
+        request.Remove("idempotencyKey");
+        Assert.AreEqual(operation == "get_space",
+            GetSchema("private").Evaluate(JsonSerializer.SerializeToElement(request)).IsValid);
+        foreach (var invalid in new[] { "", "   " })
+        {
+            request["idempotencyKey"] = invalid;
+            AssertInvalid("private", request.ToJsonString());
+        }
+    }
+
+    [TestMethod]
+    public void SharedErrorEnvelopesMatchBothSchemasAndRequireRemediation()
+    {
+        foreach (var error in new[]
+                 {
+                     ApplicationError.IdentityMismatch, ApplicationError.NotImplemented,
+                     ApplicationError.DependencyUnavailable, ApplicationError.Internal,
+                     ApplicationError.IdempotencyConflict
+                 })
+        {
+            foreach (var privateSurface in new[] { false, true })
+            {
+                var result = ToolFailureResults.Create("get_space", default, privateSurface, error);
+                var response = JsonNode.Parse(result.Content.OfType<TextContentBlock>().Single().Text)!;
+                Assert.IsTrue(result.IsError);
+                Assert.IsNull(response["knowledgeSpaceId"]);
+                Assert.IsFalse(string.IsNullOrWhiteSpace(response["correlationId"]!.GetValue<string>()));
+                JsonNode envelope = privateSurface
+                    ? response
+                    : JsonSerializer.SerializeToNode(new
+                    {
+                        contractVersion = "1.0", operation = "query_knowledge",
+                        request = new
+                        {
+                            knowledgeSpaceId = "space-001", query = "evidence",
+                            pagination = new { pageSize = 20, cursor = (string?)null },
+                            identity = new { initiatingUserId = "user-001" }
+                        },
+                        response
+                    })!;
+                var surface = privateSurface ? "private" : "public";
+                AssertValid(surface, envelope.ToJsonString());
+                var errorNode = privateSurface ? envelope["error"]! : envelope["response"]!["error"]!;
+                errorNode.AsObject().Remove("remediation");
+                AssertInvalid(surface, envelope.ToJsonString());
+            }
+        }
+    }
+
     private static void AssertValid(string surface, string instance)
     {
         var schema = GetSchema(surface);
         using var document = JsonDocument.Parse(instance);
 
-        Assert.IsTrue(schema.Evaluate(document.RootElement).IsValid);
+        Assert.IsTrue(schema.Evaluate(document.RootElement).IsValid, $"{surface}: {instance}");
     }
 
     private static void AssertInvalid(string surface, string instance)

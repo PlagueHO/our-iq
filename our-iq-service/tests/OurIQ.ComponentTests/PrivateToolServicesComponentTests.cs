@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -10,7 +12,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using OurIQ.Domain;
+using OurIQ.Observability;
 using OurIQ.ToolServices;
 
 namespace OurIQ.ComponentTests;
@@ -256,6 +260,16 @@ public sealed class PrivateToolServicesComponentTests
             Assert.IsFalse(
                 result.GetProperty("isError").GetBoolean(),
                 result.GetProperty("content")[0].GetProperty("text").GetString());
+            if (OntologyAgentToolService.IsMutating(operation))
+            {
+                var replay = await SendMcpRequestAsync(
+                    client,
+                    OntologyToolCallRequest(requestId++, state.Snapshot, operation, arguments, correlationId: "retry"),
+                    includePrivateExecutionContext: true,
+                    initialize.SessionId);
+                Assert.AreEqual(result.GetProperty("content")[0].GetProperty("text").GetString(),
+                    replay.Document.RootElement.GetProperty("result").GetProperty("content")[0].GetProperty("text").GetString());
+            }
         }
 
         Assert.AreEqual(1, state.ActivationCount);
@@ -378,6 +392,102 @@ public sealed class PrivateToolServicesComponentTests
         Assert.AreEqual(HttpStatusCode.Forbidden, managementContextPrivateMcp.StatusCode);
     }
 
+    [TestMethod]
+    [DataRow(true, false)]
+    [DataRow(false, false)]
+    [DataRow(true, true)]
+    [DataRow(false, true)]
+    public async Task ToolFailuresRedactPayloadKeyAndCredentialMarkers(
+        bool dependencyFailure, bool hostBoundary)
+    {
+        const string key = "synthetic-raw-key-marker";
+        const string payload = "synthetic-payload-marker";
+        const string credential = "synthetic-credential-marker";
+        var markers = $"{key} {payload} {credential}";
+        var state = OntologyComponentState.Create();
+        state.ReadFailure = dependencyFailure
+            ? new HttpRequestException(markers)
+            : new InvalidOperationException(markers);
+        using var logs = new FailureLogs();
+        var traces = new ConcurrentQueue<string>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == TelemetryConstants.ActivitySourceName,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+            ActivityStopped = activity => traces.Enqueue(string.Join(" ", activity.TagObjects))
+        };
+        ActivitySource.AddActivityListener(listener);
+        using var factory = CreateAuthorizedFactory(services =>
+        {
+            services.RemoveAll<IKnowledgeSpaceControlRecordRepository>();
+            services.RemoveAll<IOntologyVersionRepository>();
+            services.RemoveAll<IExecutionContextSnapshotRepository>();
+            services.AddSingleton<IKnowledgeSpaceControlRecordRepository>(state);
+            services.AddSingleton<IOntologyVersionRepository>(state);
+            services.AddSingleton<IExecutionContextSnapshotRepository>(state);
+            services.AddLogging(logging => logging.AddProvider(logs));
+            if (hostBoundary)
+            {
+                services.RemoveAll<OntologyAgentToolService>();
+                services.AddSingleton<OntologyAgentToolService>(_ => throw state.ReadFailure!);
+            }
+        });
+        using var client = factory.CreateClient();
+        var initialize = await SendMcpRequestAsync(client, InitializeRequest(), true);
+        var call = await SendMcpRequestAsync(
+            client,
+            OntologyToolCallRequest(2, state.Snapshot, "get_space", new { payload, credential }, key),
+            true, initialize.SessionId);
+        var text = call.Document.RootElement.GetProperty("result").GetProperty("content")[0]
+            .GetProperty("text").GetString()!;
+        using var error = JsonDocument.Parse(text);
+        Assert.AreEqual(dependencyFailure ? "dependency_unavailable" : "internal_error",
+            error.RootElement.GetProperty("error").GetProperty("code").GetString());
+        var correlation = error.RootElement.GetProperty("correlationId").GetString()!;
+        Assert.IsTrue(logs.Messages.Any(message =>
+            message.Contains(hostBoundary ? "private" : "ontology", StringComparison.Ordinal)
+            && message.Contains(correlation, StringComparison.Ordinal)));
+        Assert.IsFalse(traces.IsEmpty);
+        var diagnostics = text + string.Join(" ", logs.Messages) + string.Join(" ", traces);
+        foreach (var marker in new[] { key, payload, credential })
+        {
+            Assert.IsFalse(diagnostics.Contains(marker, StringComparison.Ordinal));
+        }
+    }
+
+    [TestMethod]
+    public async Task UnsupportedPrivateToolReturnsStructuredFailure()
+    {
+        var state = OntologyComponentState.Create();
+        using var factory = CreateAuthorizedFactory();
+        using var client = factory.CreateClient();
+        var initialize = await SendMcpRequestAsync(client, InitializeRequest(), true);
+        var call = await SendMcpRequestAsync(
+            client, OntologyToolCallRequest(2, state.Snapshot, "list_spaces", new { }),
+            true, initialize.SessionId);
+        var result = call.Document.RootElement.GetProperty("result");
+        Assert.IsTrue(result.GetProperty("isError").GetBoolean());
+        using var error = JsonDocument.Parse(result.GetProperty("content")[0].GetProperty("text").GetString()!);
+        Assert.AreEqual("operation_not_implemented", error.RootElement.GetProperty("error").GetProperty("code").GetString());
+        Assert.AreEqual("list_spaces", error.RootElement.GetProperty("operation").GetString());
+    }
+
+    private sealed class FailureLogs : ILoggerProvider
+    {
+        public ConcurrentQueue<string> Messages { get; } = new();
+        public ILogger CreateLogger(string categoryName) => new Collector(Messages);
+        public void Dispose() { }
+
+        private sealed class Collector(ConcurrentQueue<string> messages) : ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+            public bool IsEnabled(LogLevel logLevel) => true;
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state,
+                Exception? exception, Func<TState, Exception?, string> formatter) =>
+                messages.Enqueue(formatter(state, exception) + exception?.ToString());
+        }
+    }
+
     private static WebApplicationFactory<ToolServicesProgram> CreateAuthorizedFactory(
         Action<IServiceCollection>? configureServices = null) =>
         new WebApplicationFactory<ToolServicesProgram>().WithTestAuthentication(
@@ -420,7 +530,9 @@ public sealed class PrivateToolServicesComponentTests
         int id,
         ExecutionContextSnapshot snapshot,
         string operation,
-        object arguments) =>
+        object arguments,
+        string? idempotencyKey = null,
+        string correlationId = "correlation-001") =>
         new
         {
             jsonrpc = "2.0",
@@ -435,6 +547,7 @@ public sealed class PrivateToolServicesComponentTests
                     {
                         contractVersion = OntologyAgentToolService.ContractVersion,
                         operation,
+                        idempotencyKey = idempotencyKey ?? $"key-{operation}",
                         knowledgeSpaceId = snapshot.KnowledgeSpaceId,
                         identity = new
                         {
@@ -447,7 +560,7 @@ public sealed class PrivateToolServicesComponentTests
                         {
                             executionId = snapshot.ExecutionId,
                             traceId = snapshot.TraceId,
-                            correlationId = "correlation-001",
+                            correlationId,
                             knowledgeSpaceId = snapshot.KnowledgeSpaceId,
                             lifecycleState = snapshot.LifecycleState,
                             ontologyVersion = snapshot.ActiveOntologyVersionId,
@@ -589,6 +702,52 @@ public sealed class PrivateToolServicesComponentTests
         private readonly Dictionary<string, OntologyProposal> proposals = new();
         private readonly Dictionary<string, OntologyCompatibilityAssessment> assessments = new();
         private readonly Dictionary<string, OntologyApproval> approvals = new();
+        private readonly Dictionary<string, IdempotencyRecord> replays = new();
+
+        public Task<IdempotencyRecord?> GetReplayAsync(
+            IdempotencyIdentity identity, CancellationToken cancellationToken = default) =>
+            Task.FromResult(replays.TryGetValue(identity.Id, out var saved) ? saved.Match(identity) : null);
+
+        public Task<IdempotencyRecord> SaveFailureAsync(
+            IdempotencyRecord outcome, CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, () => Task.CompletedTask);
+
+        public Task<IdempotencyRecord> CommitStagedVersionAsync(
+            OntologyVersionEnvelope version, OntologyProposal proposal,
+            KnowledgeSpaceControlRecord expectedControl, IdempotencyRecord outcome,
+            CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, async () =>
+            {
+                await CreateVersionAsync(version, cancellationToken);
+                await CreateProposalAsync(proposal, cancellationToken);
+            });
+
+        public Task<IdempotencyRecord> CommitAssessmentAsync(
+            OntologyCompatibilityAssessment assessment, KnowledgeSpaceControlRecord expectedControl,
+            IdempotencyRecord outcome, CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, () => CreateCompatibilityAssessmentAsync(assessment, cancellationToken));
+
+        public Task<IdempotencyRecord> CommitApprovalAsync(
+            OntologyApproval approval, KnowledgeSpaceControlRecord expectedControl,
+            IdempotencyRecord outcome, CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, () => CreateApprovalAsync(approval, cancellationToken));
+
+        public Task<IdempotencyRecord> CommitActivationAsync(
+            OntologyActivationRequest request, KnowledgeSpaceControlRecord expectedControl,
+            IdempotencyRecord outcome, CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, () => ActivateAsync(request, cancellationToken));
+
+        private async Task<IdempotencyRecord> CommitAsync(IdempotencyRecord outcome, Func<Task> write)
+        {
+            if (replays.TryGetValue(outcome.Identity.Id, out var saved))
+            {
+                return saved.Match(outcome.Identity);
+            }
+
+            await write();
+            replays.Add(outcome.Identity.Id, outcome);
+            return outcome;
+        }
 
         private OntologyComponentState(
             KnowledgeSpaceControlRecord space,
@@ -603,6 +762,7 @@ public sealed class PrivateToolServicesComponentTests
         public ExecutionContextSnapshot Snapshot { get; }
 
         public int ActivationCount { get; private set; }
+        public Exception? ReadFailure { get; set; }
 
         public static OntologyComponentState Create()
         {
@@ -629,8 +789,10 @@ public sealed class PrivateToolServicesComponentTests
         public Task<KnowledgeSpaceControlRecord?> GetAsync(
             string knowledgeSpaceId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<KnowledgeSpaceControlRecord?>(
-                knowledgeSpaceId == Space.KnowledgeSpaceId ? Space : null);
+            ReadFailure is { } failure
+                ? Task.FromException<KnowledgeSpaceControlRecord?>(failure)
+                : Task.FromResult<KnowledgeSpaceControlRecord?>(
+                    knowledgeSpaceId == Space.KnowledgeSpaceId ? Space : null);
 
         public Task<ExecutionContextSnapshot?> GetAsync(
             string executionId,

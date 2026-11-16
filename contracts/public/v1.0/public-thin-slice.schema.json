@@ -142,7 +142,14 @@
           "$ref": "#/$defs/queryKnowledgeRequest"
         },
         "response": {
-          "$ref": "#/$defs/queryKnowledgeResponse"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/errorResponse"
+            },
+            {
+              "$ref": "#/$defs/queryKnowledgeResponse"
+            }
+          ]
         }
       }
     }
@@ -260,7 +267,14 @@
           "const": "error"
         },
         "knowledgeSpaceId": {
-          "$ref": "#/$defs/opaqueId"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/opaqueId"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "correlationId": {
           "$ref": "#/$defs/opaqueId"
@@ -293,7 +307,11 @@
                 "replan_required",
                 "idempotency_key_conflict",
                 "asset_unsupported",
-                "operation_not_cancellable"
+                "operation_not_cancellable",
+                "contract_version_unsupported",
+                "operation_not_implemented",
+                "dependency_unavailable",
+                "internal_error"
               ]
             },
             "category": {
@@ -305,7 +323,9 @@
                 "validation",
                 "policy",
                 "grounding",
-                "state"
+                "state",
+                "availability",
+                "internal"
               ]
             },
             "message": {

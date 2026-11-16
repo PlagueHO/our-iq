@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Identity.Web;
 using Microsoft.Extensions.Options;
-using ModelContextProtocol.Protocol;
 using OurIQ.Contracts;
 
 namespace OurIQ.McpServer;
@@ -57,20 +56,4 @@ public sealed class ToolServicesTokenAcquirer(
             [options.Value.Scope],
             user: user);
     }
-}
-
-public static class IdentityToolResults
-{
-    public static CallToolResult IdentityMismatch() =>
-        new()
-        {
-            IsError = true,
-            Content =
-            [
-                new TextContentBlock
-                {
-                    Text = "The authenticated identity does not match the request identity."
-                }
-            ]
-        };
 }

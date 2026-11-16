@@ -279,7 +279,12 @@ public sealed class PublicMcpServerComponentTests
             },
             initialize.SessionId);
 
-        Assert.IsTrue(call.Document.RootElement.GetProperty("result").GetProperty("isError").GetBoolean());
+        var result = call.Document.RootElement.GetProperty("result");
+        Assert.IsTrue(result.GetProperty("isError").GetBoolean());
+        using var error = JsonDocument.Parse(result.GetProperty("content")[0].GetProperty("text").GetString()!);
+        Assert.AreEqual("operation_not_implemented", error.RootElement.GetProperty("error").GetProperty("code").GetString());
+        Assert.AreEqual(JsonValueKind.Null, error.RootElement.GetProperty("knowledgeSpaceId").ValueKind);
+        Assert.IsFalse(string.IsNullOrWhiteSpace(error.RootElement.GetProperty("correlationId").GetString()));
     }
 
     [TestMethod]
@@ -319,9 +324,10 @@ public sealed class PublicMcpServerComponentTests
             .GetProperty("content")[0]
             .GetProperty("text")
             .GetString();
-        Assert.AreEqual(
-            "The authenticated identity does not match the request identity.",
-            text);
+        using var error = JsonDocument.Parse(text!);
+        Assert.AreEqual("authorization_denied", error.RootElement.GetProperty("error").GetProperty("code").GetString());
+        Assert.AreEqual("authorization", error.RootElement.GetProperty("error").GetProperty("category").GetString());
+        Assert.IsFalse(string.IsNullOrWhiteSpace(error.RootElement.GetProperty("error").GetProperty("remediation").GetString()));
     }
 
     [TestMethod]
