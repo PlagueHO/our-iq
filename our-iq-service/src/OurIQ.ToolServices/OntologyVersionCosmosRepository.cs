@@ -9,7 +9,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace OurIQ.ToolServices;
 
-public sealed class OntologyVersionCosmosRepository(
+public sealed partial class OntologyVersionCosmosRepository(
     CosmosClient cosmosClient,
     IOptions<KnowledgeSpaceCosmosOptions> options)
     : IOntologyVersionRepository
@@ -151,29 +151,7 @@ public sealed class OntologyVersionCosmosRepository(
         var current = controlResponse.Resource.ToDomain(controlResponse.ETag);
         current.Validate();
 
-        ValidateActivationInputs(request, version, approval, assessment, current);
-
-        var activatedAt = DateTimeOffset.UtcNow;
-        var evidence = new OntologyActivationEvidence
-        {
-            Id = request.ActivationEvidenceId,
-            KnowledgeSpaceId = request.KnowledgeSpaceId,
-            OntologyVersionId = request.OntologyVersionId,
-            PayloadDigest = request.PayloadDigest,
-            ApprovalId = approval.Id,
-            CompatibilityAssessmentId = assessment.Id,
-            ActivatedAt = activatedAt
-        };
-        evidence.Validate();
-        var next = current with
-        {
-            ActiveOntologyVersionId = version.OntologyVersionId,
-            ActiveOntologyDigest = version.PayloadDigest,
-            LifecycleState = KnowledgeSpaceLifecycleStates.Active,
-            UpdatedAt = activatedAt,
-            ETag = null
-        };
-        next.Validate();
+        var (next, evidence) = PrepareActivation(request, version, approval, assessment, current);
 
         using var response = await container
             .CreateTransactionalBatch(new PartitionKey(request.KnowledgeSpaceId))
@@ -373,6 +351,38 @@ public sealed class OntologyVersionCosmosRepository(
             throw new OntologyActivationConflictException(request.KnowledgeSpaceId);
         }
     }
+
+    private static (KnowledgeSpaceControlRecord Next, OntologyActivationEvidence Evidence) PrepareActivation(
+        OntologyActivationRequest request,
+        OntologyVersionEnvelope version,
+        OntologyApproval approval,
+        OntologyCompatibilityAssessment assessment,
+        KnowledgeSpaceControlRecord current)
+    {
+        ValidateActivationInputs(request, version, approval, assessment, current);
+        var now = DateTimeOffset.UtcNow;
+        var evidence = new OntologyActivationEvidence
+        {
+            Id = request.ActivationEvidenceId,
+            KnowledgeSpaceId = request.KnowledgeSpaceId,
+            OntologyVersionId = request.OntologyVersionId,
+            PayloadDigest = request.PayloadDigest,
+            ApprovalId = approval.Id,
+            CompatibilityAssessmentId = assessment.Id,
+            ActivatedAt = now
+        };
+        evidence.Validate();
+        var next = current with
+        {
+            ActiveOntologyVersionId = version.OntologyVersionId,
+            ActiveOntologyDigest = version.PayloadDigest,
+            LifecycleState = KnowledgeSpaceLifecycleStates.Active,
+            UpdatedAt = now,
+            ETag = null
+        };
+        next.Validate();
+        return (next, evidence);
+    }
 }
 
 internal sealed class OntologyControlRecordDocument
@@ -388,6 +398,12 @@ internal sealed class OntologyControlRecordDocument
 
     [JsonProperty("record")]
     public JObject Record { get; init; } = new();
+
+    [JsonProperty("ttl", NullValueHandling = NullValueHandling.Ignore)]
+    public int? TimeToLive { get; init; }
+
+    [JsonProperty("recordVersion", NullValueHandling = NullValueHandling.Ignore)]
+    public string? RecordVersion { get; init; }
 
     public static OntologyControlRecordDocument FromDomain<T>(
         T record,

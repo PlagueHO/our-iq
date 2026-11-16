@@ -237,11 +237,19 @@ not returned as evidence.
 
 ## Idempotency and concurrency
 
+**Implemented local slice (#36):** `stage_ontology_version`,
+`validate_ontology_compatibility`, `record_approval`, and
+`activate_ontology_version` support durable replay. Public tools and other
+private workflows remain unsupported. The wider public and management rules
+below remain a proposed contract.
+
 Idempotency applies to the caller's submitted operation, not to agent reasoning
 in general:
 
-1. A mutating public or management operation accepts a caller-generated
-   idempotency key scoped to operation, caller, and knowledge space.
+1. Each implemented private mutation requires a nonblank caller-generated
+   idempotency key scoped to operation, initiating user, logical acting agent,
+   and knowledge space. Mutating public and management contracts also specify
+   keys; this issue does not implement those workflows.
 2. A replay with the same normalized request returns the original accepted,
    completed, or failed outcome and correlation identifiers.
 3. Reusing a key with a different normalized request returns
@@ -252,7 +260,39 @@ in general:
 5. Approval and publication bind to the plan identifier and its snapshot. A
    stale plan returns `replan_required`; it is never retargeted silently.
 
+For the implemented private mutations, canonical request comparison ignores
+object property order, JSON whitespace, `idempotencyKey`, and
+`executionContext.correlationId`. It normalizes the initiating user identifier.
+It preserves arguments, array order, explicit null versus omission, agent
+definition version, and pinned snapshot values. Duplicate JSON properties are
+invalid. A different snapshot requires a new key. A new key starts new processing
+against the submitted snapshot; it does not create a private snapshot itself.
+Read tools need no key and create no replay record.
+
+Current user and agent access is checked before replay. A matching saved outcome
+does not need a fresh snapshot or the original lifecycle state. Its response body
+retains the original correlation ID; the retry's HTTP header can differ.
+New executions still require valid, fresh snapshots and a legal lifecycle state.
+
+Domain records and the original response commit atomically.
+Deterministic business failures can be saved after envelope and access checks.
+Authentication, authorization, malformed-envelope, dependency, cancellation, and
+unexpected internal failures are not saved. A dependency fault can leave the
+commit outcome uncertain. Retry the original request with the same key.
+Oversized transactions are rejected rather than split.
+
+Replay records have no automatic expiry. Their saved responses are content-bearing
+control records governed by
+[ADR-0030](../decisions/adr-0030-pilot-data-governance-and-retention-controls).
+[ADR-0031](../decisions/adr-0031-idempotency-and-shared-errors) records the
+transaction design, replay rationale, and production purge limits.
+
 ## Error taxonomy
+
+Both hosts share the application error object: `code`, `category`, `message`,
+and `remediation`. The response envelope carries `correlationId`. An early error
+can use a null `knowledgeSpaceId` when no valid space ID is available.
+This does not change HTTP authentication, MCP protocol, or resource-read errors.
 
 | Code | Meaning | Caller action |
 | --- | --- | --- |
@@ -273,6 +313,9 @@ in general:
 | `contract_version_unsupported` | The requested contract version is not published or supported. | Select a declared supported version. |
 | `contract_schema_not_found` | The requested schema is not present in the selected surface and version. | Check the schema name or contract version. |
 | `contract_schema_integrity_failure` | The published schema does not match its declared digest. | Fail closed and report the publication integrity issue. |
+| `operation_not_implemented` | The current host does not implement this workflow (`state`). | Use an implemented operation or wait for the required workflow. |
+| `dependency_unavailable` | A required service cannot confirm the outcome (`availability`). | Retry the original mutation with its original key. |
+| `internal_error` | The tool encountered an unexpected failure (`internal`). | Report the correlation ID; retry a mutation only with its original key. |
 
 `partial_plan` is the only partial-planning result: it names each incomplete
 source and never authorizes unsupported conclusions. `approval_expired` is the

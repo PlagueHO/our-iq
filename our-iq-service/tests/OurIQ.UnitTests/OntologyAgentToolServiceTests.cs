@@ -85,6 +85,15 @@ public sealed class OntologyAgentToolServiceTests
             Assert.IsFalse(result.IsError, response.RootElement.GetRawText());
             Assert.AreEqual("completed", response.RootElement.GetProperty("outcome").GetString());
             AssertSchemaValid(response.RootElement);
+            if (OntologyAgentToolService.IsMutating(operation))
+            {
+                var replay = await harness.Service.ExecuteAsync(
+                    operation,
+                    CreateRequest(harness.Snapshot, operation, arguments, correlationId: "retry-correlation"));
+                Assert.AreEqual(result.Content.OfType<TextContentBlock>().Single().Text,
+                    replay.Content.OfType<TextContentBlock>().Single().Text);
+                Assert.IsFalse(replay.IsError);
+            }
         }
 
         Assert.HasCount(1, harness.Ontologies.Versions);
@@ -92,6 +101,7 @@ public sealed class OntologyAgentToolServiceTests
         Assert.HasCount(1, harness.Ontologies.Assessments);
         Assert.HasCount(1, harness.Ontologies.Approvals);
         Assert.AreEqual(1, harness.Ontologies.ActivationCount);
+        Assert.HasCount(4, harness.Ontologies.Replays);
         Assert.AreEqual(
             KnowledgeSpaceLifecycleStates.Active,
             harness.Spaces.Record.LifecycleState);
@@ -286,8 +296,77 @@ public sealed class OntologyAgentToolServiceTests
         using var firstResponse = ReadResponse(first);
         Assert.IsFalse(first.IsError, firstResponse.RootElement.GetRawText());
         AssertError(
-            await harness.Service.ExecuteAsync("stage_ontology_version", request),
+            await harness.Service.ExecuteAsync("stage_ontology_version",
+                CreateRequest(harness.Snapshot, "stage_ontology_version",
+                    new { proposalId = "proposal-001", payload }, idempotencyKey: "new-key")),
             "validation_failed");
+    }
+
+    [TestMethod]
+    [DataRow("stage_ontology_version")]
+    [DataRow("validate_ontology_compatibility")]
+    [DataRow("record_approval")]
+    [DataRow("activate_ontology_version")]
+    public async Task DeterministicFailuresReplayTheOriginalOutcome(string operation)
+    {
+        var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Pending);
+        var first = await harness.Service.ExecuteAsync(
+            operation, CreateRequest(harness.Snapshot, operation, new { }));
+        harness.Spaces.Record = harness.Spaces.Record with { MutationPolicyVersion = "2.0" };
+        var replay = await harness.Service.ExecuteAsync(
+            operation, CreateRequest(harness.Snapshot, operation, new { }, correlationId: "retry"));
+
+        AssertError(first, "validation_failed");
+        Assert.AreEqual(first.Content.OfType<TextContentBlock>().Single().Text,
+            replay.Content.OfType<TextContentBlock>().Single().Text);
+        Assert.HasCount(1, harness.Ontologies.Replays);
+        Assert.HasCount(0, harness.Ontologies.Versions);
+    }
+
+    [TestMethod]
+    public async Task ReplayRequiresCurrentAccessAndRejectsChangedSnapshots()
+    {
+        var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Pending);
+        const string operation = "stage_ontology_version";
+        var arguments = new { proposalId = "proposal-001", payload = CreatePayload() };
+        var request = CreateRequest(harness.Snapshot, operation, arguments);
+        Assert.IsFalse((await harness.Service.ExecuteAsync(operation, request)).IsError);
+        var changed = JsonNode.Parse(request.GetRawText())!;
+        changed["executionContext"]!["executionId"] = "new-execution";
+        AssertError(await harness.Service.ExecuteAsync(operation,
+            JsonSerializer.SerializeToElement(changed)), "idempotency_key_conflict");
+
+        harness.Spaces.Record = harness.Spaces.Record.RevokeRole(
+            "owner-001", OntologyManagerUser, KnowledgeSpaceRoles.OntologyManager);
+        AssertError(await harness.Service.ExecuteAsync(operation, request), "authorization_denied");
+        Assert.HasCount(1, harness.Ontologies.Replays);
+    }
+
+    [TestMethod]
+    public async Task MalformedEnvelopesAndKeyFreeReadsDoNotSaveOutcomes()
+    {
+        var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Pending);
+        var request = JsonNode.Parse(
+            CreateRequest(harness.Snapshot, "stage_ontology_version", new { }).GetRawText())!;
+        foreach (var key in new[] { null, "", "   " })
+        {
+            request["idempotencyKey"] = key;
+            AssertError(await harness.Service.ExecuteAsync(
+                "stage_ontology_version", JsonSerializer.SerializeToElement(request)), "validation_failed");
+        }
+
+        request.AsObject().Remove("idempotencyKey");
+        AssertError(await harness.Service.ExecuteAsync(
+            "stage_ontology_version", JsonSerializer.SerializeToElement(request)), "validation_failed");
+        request["contractVersion"] = "2.0";
+        AssertError(await harness.Service.ExecuteAsync(
+            "stage_ontology_version", JsonSerializer.SerializeToElement(request)), "contract_version_unsupported");
+
+        var read = JsonNode.Parse(CreateRequest(harness.Snapshot, "get_space", new { }).GetRawText())!;
+        read.AsObject().Remove("idempotencyKey");
+        Assert.IsFalse((await harness.Service.ExecuteAsync(
+            "get_space", JsonSerializer.SerializeToElement(read))).IsError);
+        Assert.HasCount(0, harness.Ontologies.Replays);
     }
 
     [TestMethod]
@@ -321,6 +400,47 @@ public sealed class OntologyAgentToolServiceTests
         AssertError(
             await harness.Service.ExecuteAsync("get_space", changed),
             "replan_required");
+    }
+
+    [TestMethod]
+    public async Task LookupAndTransientCommitFailuresCannotCreateTerminalOutcomes()
+    {
+        var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Pending);
+        const string operation = "stage_ontology_version";
+        var request = CreateRequest(harness.Snapshot, operation,
+            new { proposalId = "proposal-001", payload = CreatePayload() });
+        harness.Ontologies.LookupFailure = new HttpRequestException("Synthetic dependency failure.");
+        AssertError(await harness.Service.ExecuteAsync(operation, request), "dependency_unavailable");
+        Assert.AreEqual(0, harness.Ontologies.CommitAttempts);
+        harness.Ontologies.LookupFailure = null;
+        harness.Ontologies.CommitFailure = new MutationDependencyException();
+        AssertError(await harness.Service.ExecuteAsync(operation, request), "dependency_unavailable");
+        Assert.HasCount(0, harness.Ontologies.Replays);
+        harness.Ontologies.CommitFailure = null;
+        Assert.IsFalse((await harness.Service.ExecuteAsync(operation, request)).IsError);
+        Assert.HasCount(1, harness.Ontologies.Versions);
+    }
+
+    [TestMethod]
+    public async Task ContentionIsBoundedAndCancellationIsNotSaved()
+    {
+        var harness = CreateHarness(KnowledgeSpaceLifecycleStates.Pending);
+        const string operation = "stage_ontology_version";
+        var request = CreateRequest(harness.Snapshot, operation,
+            new { proposalId = "proposal-001", payload = CreatePayload() });
+        harness.Ontologies.CommitFailure = new MutationConcurrencyException();
+        AssertError(await harness.Service.ExecuteAsync(operation, request), "dependency_unavailable");
+        Assert.AreEqual(3, harness.Ontologies.CommitAttempts);
+        Assert.HasCount(0, harness.Ontologies.Replays);
+        harness.Ontologies.CommitFailure = new TaskCanceledException("Synthetic transport timeout.");
+        AssertError(await harness.Service.ExecuteAsync(operation, request), "dependency_unavailable");
+        Assert.HasCount(0, harness.Ontologies.Replays);
+        harness.Ontologies.CommitFailure = new OperationCanceledException();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(() =>
+            harness.Service.ExecuteAsync(operation, request, cancellation.Token));
+        Assert.HasCount(0, harness.Ontologies.Replays);
     }
 
     public static IEnumerable<object[]> GetOperationNames() =>
@@ -371,11 +491,14 @@ public sealed class OntologyAgentToolServiceTests
         object arguments,
         string? actingAgentId = null,
         string? agentDefinitionVersion = null,
-        string? requiredCapability = null) =>
+        string? requiredCapability = null,
+        string? idempotencyKey = null,
+        string correlationId = "correlation-001") =>
         JsonSerializer.SerializeToElement(new
         {
             contractVersion = OntologyAgentToolService.ContractVersion,
             operation,
+            idempotencyKey = idempotencyKey ?? $"key-{operation}",
             knowledgeSpaceId = snapshot.KnowledgeSpaceId,
             identity = new
             {
@@ -389,7 +512,7 @@ public sealed class OntologyAgentToolServiceTests
             {
                 executionId = snapshot.ExecutionId,
                 traceId = snapshot.TraceId,
-                correlationId = "correlation-001",
+                correlationId,
                 knowledgeSpaceId = snapshot.KnowledgeSpaceId,
                 lifecycleState = snapshot.LifecycleState,
                 ontologyVersion = snapshot.ActiveOntologyVersionId,
@@ -401,7 +524,7 @@ public sealed class OntologyAgentToolServiceTests
             arguments
         }, RequestJsonOptions);
 
-    private static OntologyPayload CreatePayload(string versionId = "ontology-v1") =>
+    internal static OntologyPayload CreatePayload(string versionId = "ontology-v1") =>
         new()
         {
             OntologyId = "ontology-product",
@@ -554,6 +677,69 @@ public sealed class OntologyAgentToolServiceTests
     private sealed class InMemoryOntologyRepository(InMemorySpaceRepository spaces)
         : IOntologyVersionRepository
     {
+        public Dictionary<string, IdempotencyRecord> Replays { get; } = new(StringComparer.Ordinal);
+        public Exception? LookupFailure { get; set; }
+        public Exception? CommitFailure { get; set; }
+        public int CommitAttempts { get; private set; }
+
+        public Task<IdempotencyRecord?> GetReplayAsync(
+            IdempotencyIdentity identity, CancellationToken cancellationToken = default) =>
+            LookupFailure is { } failure
+                ? Task.FromException<IdempotencyRecord?>(failure)
+                : Task.FromResult(Replays.TryGetValue(identity.Id, out var saved) ? saved.Match(identity) : null);
+
+        public Task<IdempotencyRecord> SaveFailureAsync(
+            IdempotencyRecord outcome, CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, () => Task.CompletedTask);
+
+        public Task<IdempotencyRecord> CommitStagedVersionAsync(
+            OntologyVersionEnvelope version, OntologyProposal proposal,
+            KnowledgeSpaceControlRecord expectedControl, IdempotencyRecord outcome,
+            CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, async () =>
+            {
+                if (Versions.ContainsKey(version.Id) || Proposals.ContainsKey(proposal.Id))
+                {
+                    throw new OntologyControlRecordConflictException(version.KnowledgeSpaceId, version.Id);
+                }
+
+                await CreateVersionAsync(version, cancellationToken);
+                await CreateProposalAsync(proposal, cancellationToken);
+            });
+
+        public Task<IdempotencyRecord> CommitAssessmentAsync(
+            OntologyCompatibilityAssessment assessment, KnowledgeSpaceControlRecord expectedControl,
+            IdempotencyRecord outcome, CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, () => CreateCompatibilityAssessmentAsync(assessment, cancellationToken));
+
+        public Task<IdempotencyRecord> CommitApprovalAsync(
+            OntologyApproval approval, KnowledgeSpaceControlRecord expectedControl,
+            IdempotencyRecord outcome, CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, () => CreateApprovalAsync(approval, cancellationToken));
+
+        public Task<IdempotencyRecord> CommitActivationAsync(
+            OntologyActivationRequest request, KnowledgeSpaceControlRecord expectedControl,
+            IdempotencyRecord outcome, CancellationToken cancellationToken = default) =>
+            CommitAsync(outcome, () => ActivateAsync(request, cancellationToken));
+
+        private async Task<IdempotencyRecord> CommitAsync(IdempotencyRecord outcome, Func<Task> write)
+        {
+            CommitAttempts++;
+            if (CommitFailure is { } failure)
+            {
+                throw failure;
+            }
+
+            if (Replays.TryGetValue(outcome.Identity.Id, out var saved))
+            {
+                return saved.Match(outcome.Identity);
+            }
+
+            await write();
+            Replays.Add(outcome.Identity.Id, outcome);
+            return outcome;
+        }
+
         public Dictionary<string, OntologyVersionEnvelope> Versions { get; } =
             new(StringComparer.Ordinal);
 

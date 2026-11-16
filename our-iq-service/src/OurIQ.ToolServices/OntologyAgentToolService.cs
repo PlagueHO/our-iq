@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ModelContextProtocol.Protocol;
+using OurIQ.Contracts;
 using OurIQ.Domain;
 
 namespace OurIQ.ToolServices;
@@ -8,7 +10,8 @@ namespace OurIQ.ToolServices;
 public sealed class OntologyAgentToolService(
     IKnowledgeSpaceControlRecordRepository spaces,
     IOntologyVersionRepository ontologies,
-    IExecutionContextSnapshotRepository snapshots)
+    IExecutionContextSnapshotRepository snapshots,
+    ILogger<OntologyAgentToolService>? logger = null)
 {
     public const string ContractVersion = "1.0";
 
@@ -54,69 +57,104 @@ public sealed class OntologyAgentToolService(
         CancellationToken cancellationToken = default)
     {
         OntologyToolRequest? request = null;
+        AuthorizedOperation? authorized = null;
 
         try
         {
+            _ = JsonCanonicalizer.Canonicalize(requestJson);
             ValidateRequestShape(requestJson);
             request = requestJson.Deserialize<OntologyToolRequest>(JsonOptions)
                 ?? throw new JsonException("The request envelope is required.");
-            var context = await AuthorizeAsync(expectedOperation, request, cancellationToken);
-            var result = await ExecuteAuthorizedAsync(context, cancellationToken);
-            return ToolResult(Success(request, result), false);
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                authorized = null;
+                var context = await AuthorizeAsync(
+                    expectedOperation, request, requestJson, cancellationToken);
+                authorized = context;
+                if (context.ReplayIdentity is { } identity)
+                {
+                    var stored = await ontologies.GetReplayAsync(identity, cancellationToken);
+                    if (stored is not null)
+                    {
+                        return ToolResult(stored.Match(identity));
+                    }
+                }
+
+                await ValidateStateAsync(context, cancellationToken);
+                try
+                {
+                    var result = await ExecuteAuthorizedAsync(context, cancellationToken);
+                    return result is IdempotencyRecord outcome
+                        ? ToolResult(outcome)
+                        : ToolResult(Success(request, result), false);
+                }
+                catch (MutationConcurrencyException)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+            }
+
+            throw new MutationDependencyException();
         }
-        catch (OntologyToolException exception)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return ToolResult(Error(request, expectedOperation, exception), true);
+            throw;
         }
-        catch (OntologyActivationConflictException exception)
+        catch (IdempotencyKeyConflictException)
         {
-            return ToolResult(
-                Error(
-                    request,
-                    expectedOperation,
-                    new OntologyToolException(
-                        "replan_required",
-                        "conflict",
-                        exception.Message,
-                        "Create a fresh execution context and retry activation.")),
-                true);
+            return ToolFailureResults.Create(
+                expectedOperation, requestJson, true, ApplicationError.IdempotencyConflict);
         }
-        catch (KnowledgeSpaceStateConflictException exception)
+        catch (Exception exception) when (IsBusinessFailure(exception))
         {
-            return ToolResult(
-                Error(
-                    request,
-                    expectedOperation,
-                    new OntologyToolException(
-                        KnowledgeSpaceStateConflictException.Code,
-                        "state",
-                        exception.Message,
-                        "Inspect the current knowledge-space lifecycle state.")),
-                true);
+            var response = Error(request, expectedOperation, ToToolException(exception));
+            if (authorized?.ReplayIdentity is not { } identity
+                || exception is OntologyToolException { Code: "authorization_denied" })
+            {
+                return ToolResult(response, true);
+            }
+
+            try
+            {
+                var outcome = await ontologies.SaveFailureAsync(
+                    new(identity, JsonSerializer.Serialize(response, JsonOptions), true, DateTimeOffset.UtcNow),
+                    cancellationToken);
+                return ToolResult(outcome.Match(identity));
+            }
+            catch (IdempotencyKeyConflictException)
+            {
+                return ToolFailureResults.Create(
+                    expectedOperation, requestJson, true, ApplicationError.IdempotencyConflict);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception persistenceException)
+            {
+                return Failure(persistenceException);
+            }
         }
-        catch (Exception exception) when (
-            exception is JsonException
-                or ArgumentException
-                or OntologyPayloadValidationException
-                or ExecutionContextSnapshotValidationException
-                or OntologyControlRecordConflictException)
+        catch (Exception exception)
         {
-            return ToolResult(
-                Error(
-                    request,
-                    expectedOperation,
-                    new OntologyToolException(
-                        "validation_failed",
-                        "validation",
-                        exception.Message,
-                        "Correct the request and retry with a fresh execution context.")),
-                true);
+            return Failure(exception);
+        }
+
+        CallToolResult Failure(Exception exception)
+        {
+            var correlationId = Activity.Current?.TraceId.ToHexString() ?? Guid.NewGuid().ToString("N");
+            logger?.LogError(
+                "Tool failed at {Stage} with {ErrorType}. Correlation {CorrelationId}.",
+                "ontology", exception.GetType().Name, correlationId);
+            return ToolFailureResults.Create(
+                expectedOperation, requestJson, true, ToolFailureResults.Classify(exception), correlationId);
         }
     }
 
     private async Task<AuthorizedOperation> AuthorizeAsync(
         string expectedOperation,
         OntologyToolRequest request,
+        JsonElement requestJson,
         CancellationToken cancellationToken)
     {
         ValidateEnvelope(expectedOperation, request);
@@ -145,12 +183,26 @@ public sealed class OntologyAgentToolService(
                 "Use the accepted Ontology Agent definition and an authorized Ontology Manager.");
         }
 
-        if (!policy.LegalStates.Contains(current.LifecycleState))
+        var identity = IsMutating(expectedOperation)
+            ? IdempotencyIdentity.Create(
+                expectedOperation, request.Identity.InitiatingUserId,
+                request.Identity.ActingAgentId, requestJson)
+            : null;
+        return new AuthorizedOperation(request, current, identity);
+    }
+
+    private async Task ValidateStateAsync(
+        AuthorizedOperation operation,
+        CancellationToken cancellationToken)
+    {
+        var request = operation.Request;
+        var current = operation.Space;
+        if (!Policies[request.Operation].LegalStates.Contains(current.LifecycleState))
         {
             throw new OntologyToolException(
                 "space_state_conflict",
                 "state",
-                $"Operation '{expectedOperation}' is not legal while the knowledge space is '{current.LifecycleState}'.",
+                $"Operation '{request.Operation}' is not legal while the knowledge space is '{current.LifecycleState}'.",
                 "Move the knowledge space to a legal lifecycle state before retrying.");
         }
 
@@ -174,9 +226,32 @@ public sealed class OntologyAgentToolService(
                 $"The execution-context snapshot is stale: {string.Join(", ", freshness.ChangedFields)}.",
                 "Create a fresh execution-context snapshot and retry.");
         }
-
-        return new AuthorizedOperation(request, current);
     }
+
+    public static bool IsMutating(string operation) =>
+        operation is "stage_ontology_version" or "validate_ontology_compatibility"
+            or "record_approval" or "activate_ontology_version";
+
+    private static bool IsBusinessFailure(Exception exception) =>
+        exception is OntologyToolException or OntologyActivationConflictException
+            or KnowledgeSpaceStateConflictException or JsonException or ArgumentException
+            or OntologyPayloadValidationException or ExecutionContextSnapshotValidationException
+            or OntologyControlRecordConflictException;
+
+    private static OntologyToolException ToToolException(Exception exception) =>
+        exception switch
+        {
+            OntologyToolException known => known,
+            OntologyActivationConflictException => new(
+                "replan_required", "conflict", "The ontology activation context changed.",
+                "Create a fresh execution context and retry with a new key."),
+            KnowledgeSpaceStateConflictException => new(
+                "space_state_conflict", "state", "The lifecycle state does not permit this operation.",
+                "Inspect the current knowledge-space lifecycle state."),
+            _ => new(
+                "validation_failed", "validation", "The request or its domain records are invalid.",
+                "Correct the request and use a new key for changed input.")
+        };
 
     private async Task<object> ExecuteAuthorizedAsync(
         AuthorizedOperation operation,
@@ -307,14 +382,14 @@ public sealed class OntologyAgentToolService(
         };
         proposal.Validate();
 
-        await ontologies.CreateVersionAsync(version, cancellationToken);
-        await ontologies.CreateProposalAsync(proposal, cancellationToken);
-        return new
+        var result = new
         {
             version.OntologyVersionId,
             version.PayloadDigest,
             proposalId = proposal.Id
         };
+        return await ontologies.CommitStagedVersionAsync(
+            version, proposal, operation.Space, Outcome(operation, result), cancellationToken);
     }
 
     private async Task<object> ValidateOntologyCompatibilityAsync(
@@ -353,14 +428,15 @@ public sealed class OntologyAgentToolService(
             CreatedBy = ActorReference(operation.Request),
             Findings = findings
         };
-        await ontologies.CreateCompatibilityAssessmentAsync(assessment, cancellationToken);
-        return new
+        var result = new
         {
             assessmentId = assessment.Id,
             compatible = assessment.IsApproved,
             assessment.RequiresMigration,
             assessment.Findings
         };
+        return await ontologies.CommitAssessmentAsync(
+            assessment, operation.Space, Outcome(operation, result), cancellationToken);
     }
 
     private async Task<object> RecordApprovalAsync(
@@ -422,8 +498,10 @@ public sealed class OntologyAgentToolService(
             IsApproved = approved,
             CreatedAt = DateTimeOffset.UtcNow
         };
-        await ontologies.CreateApprovalAsync(approval, cancellationToken);
-        return new { approvalId = approval.Id, approved = approval.IsApproved };
+        return await ontologies.CommitApprovalAsync(
+            approval, operation.Space,
+            Outcome(operation, new { approvalId = approval.Id, approved = approval.IsApproved }),
+            cancellationToken);
     }
 
     private async Task<object> ActivateOntologyVersionAsync(
@@ -443,23 +521,23 @@ public sealed class OntologyAgentToolService(
         Require(arguments.PayloadDigest, "payloadDigest");
         Require(arguments.ApprovalId, "approvalId");
         Require(arguments.ActivationEvidenceId, "activationEvidenceId");
-        var activated = await ontologies.ActivateAsync(
-            new OntologyActivationRequest(
+        var activation = new OntologyActivationRequest(
                 operation.Request.KnowledgeSpaceId,
                 arguments.OntologyVersionId,
                 arguments.PayloadDigest,
                 arguments.ApprovalId,
                 arguments.ExpectedActiveOntologyVersionId,
                 arguments.ExpectedActiveOntologyDigest,
-                arguments.ActivationEvidenceId),
-            cancellationToken);
-        return new
+                arguments.ActivationEvidenceId);
+        var result = new
         {
-            ontologyVersionId = activated.ActiveOntologyVersionId,
-            payloadDigest = activated.ActiveOntologyDigest,
-            lifecycleState = activated.LifecycleState,
+            ontologyVersionId = arguments.OntologyVersionId,
+            payloadDigest = arguments.PayloadDigest,
+            lifecycleState = KnowledgeSpaceLifecycleStates.Active,
             activationEvidenceId = arguments.ActivationEvidenceId
         };
+        return await ontologies.CommitActivationAsync(
+            activation, operation.Space, Outcome(operation, result), cancellationToken);
     }
 
     private async Task<OntologyVersionEnvelope> GetRequiredVersionAsync(
@@ -618,6 +696,11 @@ public sealed class OntologyAgentToolService(
 
         Require(request.KnowledgeSpaceId, "knowledgeSpaceId");
         Require(request.Operation, "operation");
+        if (IsMutating(expectedOperation))
+        {
+            Require(request.IdempotencyKey, "idempotencyKey");
+        }
+
         ArgumentNullException.ThrowIfNull(request.Identity);
         ArgumentNullException.ThrowIfNull(request.ExecutionContext);
         if (!string.Equals(request.Operation, expectedOperation, StringComparison.Ordinal)
@@ -766,6 +849,21 @@ public sealed class OntologyAgentToolService(
             ]
         };
 
+    private static CallToolResult ToolResult(IdempotencyRecord outcome) =>
+        new()
+        {
+            IsError = outcome.IsError,
+            Content = [new TextContentBlock { Text = outcome.ResponseJson }]
+        };
+
+    private static IdempotencyRecord Outcome(AuthorizedOperation operation, object result) =>
+        new(
+            operation.ReplayIdentity
+                ?? throw new InvalidOperationException("The mutation requires a replay identity."),
+            JsonSerializer.Serialize(Success(operation.Request, result), JsonOptions),
+            false,
+            DateTimeOffset.UtcNow);
+
     private static OntologyToolResponse Success(OntologyToolRequest request, object result) =>
         new(
             ContractVersion,
@@ -785,15 +883,15 @@ public sealed class OntologyAgentToolService(
             ContractVersion,
             operation,
             string.IsNullOrWhiteSpace(request?.KnowledgeSpaceId)
-                ? "unknown"
+                ? null
                 : request.KnowledgeSpaceId,
             "error",
             string.IsNullOrWhiteSpace(request?.ExecutionContext?.CorrelationId)
-                ? "unavailable"
+                ? Activity.Current?.TraceId.ToHexString() ?? Guid.NewGuid().ToString("N")
                 : request.ExecutionContext.CorrelationId,
             "notApplicable",
             null,
-            new OntologyToolError(
+            new ApplicationError(
                 exception.Code,
                 exception.Category,
                 exception.Message,
@@ -822,7 +920,8 @@ public sealed class OntologyAgentToolService(
 
     private sealed record AuthorizedOperation(
         OntologyToolRequest Request,
-        KnowledgeSpaceControlRecord Space);
+        KnowledgeSpaceControlRecord Space,
+        IdempotencyIdentity? ReplayIdentity);
 
     private sealed record OperationPolicy(
         string UserCapability,
@@ -837,6 +936,8 @@ public sealed class OntologyAgentToolService(
 
 public sealed record OntologyToolRequest
 {
+    public string? IdempotencyKey { get; init; }
+
     public string ContractVersion { get; init; } = string.Empty;
 
     public string Operation { get; init; } = string.Empty;
@@ -887,18 +988,12 @@ public sealed record OntologyToolExecutionContext
 public sealed record OntologyToolResponse(
     string ContractVersion,
     string Operation,
-    string KnowledgeSpaceId,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)] string? KnowledgeSpaceId,
     string Outcome,
     string CorrelationId,
     string Pagination,
     object? Result,
-    OntologyToolError? Error);
-
-public sealed record OntologyToolError(
-    string Code,
-    string Category,
-    string Message,
-    string Remediation);
+    ApplicationError? Error);
 
 public sealed class OntologyToolException(
     string code,

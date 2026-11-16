@@ -8,7 +8,7 @@
         {
           "schemaName": "private-deterministic-tools",
           "assetPath": "contracts/private/v1.0/private-deterministic-tools.schema.json",
-          "sha256": "b272fd247d30a057507d10de6725c3c1d564cd21fcc8fb3381cc066f2558c6d3"
+          "sha256": "65abaaf9f69e2fb9892df67d42427f1ead29080e0e3354fea9ad44202d50a166"
         }
       ]
     }

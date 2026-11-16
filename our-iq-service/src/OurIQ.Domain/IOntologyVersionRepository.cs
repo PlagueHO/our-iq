@@ -2,6 +2,39 @@ namespace OurIQ.Domain;
 
 public interface IOntologyVersionRepository
 {
+    Task<IdempotencyRecord?> GetReplayAsync(
+        IdempotencyIdentity identity,
+        CancellationToken cancellationToken = default);
+
+    Task<IdempotencyRecord> SaveFailureAsync(
+        IdempotencyRecord outcome,
+        CancellationToken cancellationToken = default);
+
+    Task<IdempotencyRecord> CommitStagedVersionAsync(
+        OntologyVersionEnvelope version,
+        OntologyProposal proposal,
+        KnowledgeSpaceControlRecord expectedControl,
+        IdempotencyRecord outcome,
+        CancellationToken cancellationToken = default);
+
+    Task<IdempotencyRecord> CommitAssessmentAsync(
+        OntologyCompatibilityAssessment assessment,
+        KnowledgeSpaceControlRecord expectedControl,
+        IdempotencyRecord outcome,
+        CancellationToken cancellationToken = default);
+
+    Task<IdempotencyRecord> CommitApprovalAsync(
+        OntologyApproval approval,
+        KnowledgeSpaceControlRecord expectedControl,
+        IdempotencyRecord outcome,
+        CancellationToken cancellationToken = default);
+
+    Task<IdempotencyRecord> CommitActivationAsync(
+        OntologyActivationRequest request,
+        KnowledgeSpaceControlRecord expectedControl,
+        IdempotencyRecord outcome,
+        CancellationToken cancellationToken = default);
+
     Task<OntologyVersionEnvelope?> GetVersionAsync(
         string ontologyVersionId,
         string knowledgeSpaceId,

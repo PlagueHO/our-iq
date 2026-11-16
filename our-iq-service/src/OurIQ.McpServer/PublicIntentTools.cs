@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Text.Json;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using OurIQ.Contracts;
+using OurIQ.ToolServices;
 
 namespace OurIQ.McpServer;
 
@@ -12,48 +14,38 @@ public static class PublicIntentTools
     [Description("Request creation of a knowledge space.")]
     public static CallToolResult CreateSpace(
         [Description("The public contract request envelope.")] JsonElement request) =>
-        Unsupported("create_space");
+        Unsupported("create_space", request);
 
     [McpServerTool(Name = "submit_space_setup")]
     [Description("Submit ontology and governance setup for a knowledge space.")]
     public static CallToolResult SubmitSpaceSetup(
         [Description("The public contract request envelope.")] JsonElement request) =>
-        Unsupported("submit_space_setup");
+        Unsupported("submit_space_setup", request);
 
     [McpServerTool(Name = "approve_ontology")]
     [Description("Approve a pending ontology version for a knowledge space.")]
     public static CallToolResult ApproveOntology(
         [Description("The public contract request envelope.")] JsonElement request) =>
-        Unsupported("approve_ontology");
+        Unsupported("approve_ontology", request);
 
     [McpServerTool(Name = "contribute_knowledge")]
     [Description("Submit an attended contribution for governed planning.")]
     public static CallToolResult ContributeKnowledge(
         [Description("The public contract request envelope.")] JsonElement request) =>
-        Unsupported("contribute_knowledge");
+        Unsupported("contribute_knowledge", request);
 
     [McpServerTool(Name = "approve_change_plan")]
     [Description("Approve or reject a governed change plan.")]
     public static CallToolResult ApproveChangePlan(
         [Description("The public contract request envelope.")] JsonElement request) =>
-        Unsupported("approve_change_plan");
+        Unsupported("approve_change_plan", request);
 
     [McpServerTool(Name = "query_knowledge")]
     [Description("Query authorized knowledge and return cited evidence.")]
     public static CallToolResult QueryKnowledge(
         [Description("The public contract request envelope.")] JsonElement request) =>
-        Unsupported("query_knowledge");
+        Unsupported("query_knowledge", request);
 
-    private static CallToolResult Unsupported(string operation) =>
-        new()
-        {
-            IsError = true,
-            Content =
-            [
-                new TextContentBlock
-                {
-                    Text = $"The public MCP host does not implement '{operation}' yet."
-                }
-            ]
-        };
+    private static CallToolResult Unsupported(string operation, JsonElement request) =>
+        ToolFailureResults.Create(operation, request, false, ApplicationError.NotImplemented);
 }

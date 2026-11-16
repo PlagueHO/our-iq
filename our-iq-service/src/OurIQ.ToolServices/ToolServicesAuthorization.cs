@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
-using ModelContextProtocol.Protocol;
 using OurIQ.Contracts;
 
 namespace OurIQ.ToolServices;
@@ -109,20 +108,4 @@ public sealed class DenyManagementAccessValidator : IManagementAccessValidator
         HttpContext httpContext,
         CancellationToken cancellationToken) =>
         ValueTask.FromResult(false);
-}
-
-public static class IdentityToolResults
-{
-    public static CallToolResult IdentityMismatch() =>
-        new()
-        {
-            IsError = true,
-            Content =
-            [
-                new TextContentBlock
-                {
-                    Text = "The authenticated identity does not match the request identity."
-                }
-            ]
-        };
 }

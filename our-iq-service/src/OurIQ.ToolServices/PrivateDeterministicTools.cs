@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using OurIQ.Contracts;
 
 namespace OurIQ.ToolServices;
 
@@ -19,11 +20,11 @@ public static class PrivateDeterministicTools
 
     [McpServerTool(Name = "list_spaces")]
     [Description("List authorized knowledge-space control records.")]
-    public static CallToolResult ListSpaces(JsonElement request) => Unsupported("list_spaces");
+    public static CallToolResult ListSpaces(JsonElement request) => Unsupported("list_spaces", request);
 
     [McpServerTool(Name = "transition_space")]
     [Description("Apply an authorized knowledge-space lifecycle transition.")]
-    public static CallToolResult TransitionSpace(JsonElement request) => Unsupported("transition_space");
+    public static CallToolResult TransitionSpace(JsonElement request) => Unsupported("transition_space", request);
 
     [McpServerTool(Name = "get_ontology")]
     [Description("Read an immutable ontology version.")]
@@ -75,64 +76,64 @@ public static class PrivateDeterministicTools
 
     [McpServerTool(Name = "stage_source_asset")]
     [Description("Stage an immutable source asset.")]
-    public static CallToolResult StageSourceAsset(JsonElement request) => Unsupported("stage_source_asset");
+    public static CallToolResult StageSourceAsset(JsonElement request) => Unsupported("stage_source_asset", request);
 
     [McpServerTool(Name = "get_source_asset")]
     [Description("Read an immutable source asset.")]
-    public static CallToolResult GetSourceAsset(JsonElement request) => Unsupported("get_source_asset");
+    public static CallToolResult GetSourceAsset(JsonElement request) => Unsupported("get_source_asset", request);
 
     [McpServerTool(Name = "get_extraction_result")]
     [Description("Read a source extraction result.")]
-    public static CallToolResult GetExtractionResult(JsonElement request) => Unsupported("get_extraction_result");
+    public static CallToolResult GetExtractionResult(JsonElement request) => Unsupported("get_extraction_result", request);
 
     [McpServerTool(Name = "get_canonical_snapshot")]
     [Description("Read a pinned canonical snapshot.")]
     public static CallToolResult GetCanonicalSnapshot(JsonElement request) =>
-        Unsupported("get_canonical_snapshot");
+        Unsupported("get_canonical_snapshot", request);
 
     [McpServerTool(Name = "validate_change_plan")]
     [Description("Validate a governed change plan.")]
     public static CallToolResult ValidateChangePlan(JsonElement request) =>
-        Unsupported("validate_change_plan");
+        Unsupported("validate_change_plan", request);
 
     [McpServerTool(Name = "stage_knowledge_revisions")]
     [Description("Stage immutable candidate knowledge revisions.")]
     public static CallToolResult StageKnowledgeRevisions(JsonElement request) =>
-        Unsupported("stage_knowledge_revisions");
+        Unsupported("stage_knowledge_revisions", request);
 
     [McpServerTool(Name = "commit_change_set")]
     [Description("Commit a governed change set.")]
-    public static CallToolResult CommitChangeSet(JsonElement request) => Unsupported("commit_change_set");
+    public static CallToolResult CommitChangeSet(JsonElement request) => Unsupported("commit_change_set", request);
 
     [McpServerTool(Name = "get_change_set")]
     [Description("Read a committed change set.")]
-    public static CallToolResult GetChangeSet(JsonElement request) => Unsupported("get_change_set");
+    public static CallToolResult GetChangeSet(JsonElement request) => Unsupported("get_change_set", request);
 
     [McpServerTool(Name = "search_evidence")]
     [Description("Search authorized evidence candidates.")]
-    public static CallToolResult SearchEvidence(JsonElement request) => Unsupported("search_evidence");
+    public static CallToolResult SearchEvidence(JsonElement request) => Unsupported("search_evidence", request);
 
     [McpServerTool(Name = "read_canonical_evidence")]
     [Description("Read cited canonical evidence.")]
     public static CallToolResult ReadCanonicalEvidence(JsonElement request) =>
-        Unsupported("read_canonical_evidence");
+        Unsupported("read_canonical_evidence", request);
 
     [McpServerTool(Name = "create_operation")]
     [Description("Create a monitored private operation.")]
-    public static CallToolResult CreateOperation(JsonElement request) => Unsupported("create_operation");
+    public static CallToolResult CreateOperation(JsonElement request) => Unsupported("create_operation", request);
 
     [McpServerTool(Name = "get_operation")]
     [Description("Read a monitored private operation.")]
-    public static CallToolResult GetOperation(JsonElement request) => Unsupported("get_operation");
+    public static CallToolResult GetOperation(JsonElement request) => Unsupported("get_operation", request);
 
     [McpServerTool(Name = "cancel_operation")]
     [Description("Cancel an authorized private operation.")]
-    public static CallToolResult CancelOperation(JsonElement request) => Unsupported("cancel_operation");
+    public static CallToolResult CancelOperation(JsonElement request) => Unsupported("cancel_operation", request);
 
     [McpServerTool(Name = "authorize_capability")]
     [Description("Authorize a capability for a governed operation.")]
     public static CallToolResult AuthorizeCapability(JsonElement request) =>
-        Unsupported("authorize_capability");
+        Unsupported("authorize_capability", request);
 
     [McpServerTool(Name = "record_approval")]
     [Description("Record approval evidence.")]
@@ -145,18 +146,8 @@ public static class PrivateDeterministicTools
     [McpServerTool(Name = "validate_execution_grant")]
     [Description("Validate a bounded execution grant.")]
     public static CallToolResult ValidateExecutionGrant(JsonElement request) =>
-        Unsupported("validate_execution_grant");
+        Unsupported("validate_execution_grant", request);
 
-    private static CallToolResult Unsupported(string operation) =>
-        new()
-        {
-            IsError = true,
-            Content =
-            [
-                new TextContentBlock
-                {
-                    Text = $"The private Tool Services host does not implement '{operation}' yet."
-                }
-            ]
-        };
+    private static CallToolResult Unsupported(string operation, JsonElement request) =>
+        ToolFailureResults.Create(operation, request, true, ApplicationError.NotImplemented);
 }

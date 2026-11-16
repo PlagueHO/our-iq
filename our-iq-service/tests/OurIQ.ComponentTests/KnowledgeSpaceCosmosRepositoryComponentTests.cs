@@ -139,19 +139,23 @@ public sealed class KnowledgeSpaceCosmosRepositoryComponentTests
         };
 
         await ontologies.CreateVersionAsync(version);
+        var storedVersion = await ontologies.GetVersionAsync(
+            version.OntologyVersionId, version.KnowledgeSpaceId);
+        Assert.IsNotNull(storedVersion);
         Assert.AreEqual(
-            version,
-            await ontologies.GetVersionAsync(
-                version.OntologyVersionId,
-                version.KnowledgeSpaceId));
+            version with { Payload = storedVersion.Payload, SourceReferences = storedVersion.SourceReferences },
+            storedVersion);
+        Assert.AreEqual(OntologyPayloadDigest.Canonicalize(version.Payload),
+            OntologyPayloadDigest.Canonicalize(storedVersion.Payload));
+        CollectionAssert.AreEqual(version.SourceReferences.ToArray(), storedVersion.SourceReferences.ToArray());
         await Assert.ThrowsAsync<OntologyControlRecordConflictException>(
             () => ontologies.CreateVersionAsync(version));
         await ontologies.CreateCompatibilityAssessmentAsync(assessment);
-        Assert.AreEqual(
-            assessment,
-            await ontologies.GetCompatibilityAssessmentAsync(
-                assessment.Id,
-                assessment.KnowledgeSpaceId));
+        var storedAssessment = await ontologies.GetCompatibilityAssessmentAsync(
+            assessment.Id, assessment.KnowledgeSpaceId);
+        Assert.IsNotNull(storedAssessment);
+        Assert.AreEqual(assessment with { Findings = storedAssessment.Findings }, storedAssessment);
+        CollectionAssert.AreEqual(assessment.Findings.ToArray(), storedAssessment.Findings.ToArray());
         await ontologies.CreateApprovalAsync(approval);
         Assert.AreEqual(
             approval,
@@ -171,7 +175,7 @@ public sealed class KnowledgeSpaceCosmosRepositoryComponentTests
         Assert.AreEqual(version.OntologyVersionId, activated.ActiveOntologyVersionId);
         Assert.AreEqual(version.PayloadDigest, activated.ActiveOntologyDigest);
 
-        await Assert.ThrowsAsync<OntologyActivationConflictException>(
+        await Assert.ThrowsAsync<KnowledgeSpaceStateConflictException>(
             () => ontologies.ActivateAsync(
                 new OntologyActivationRequest(
                     space.KnowledgeSpaceId,
